@@ -916,9 +916,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444',
   },
   listContent: {
+    paddingHorizontal: 20,
     paddingBottom: 120,
   },
   tabletListContent: {
+    paddingHorizontal: 32,
     paddingBottom: 140,
   },
   emptyListContent: {
