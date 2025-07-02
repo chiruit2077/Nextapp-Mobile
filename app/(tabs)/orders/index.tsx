@@ -10,6 +10,7 @@ import {
   Alert,
   TextInput,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { router } from 'expo-router';
 import { apiService } from '@/services/api';
@@ -728,7 +729,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight || 0,
+    paddingTop: 0,
   },
   headerGradient: {
     paddingHorizontal: 20,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar as RNStatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { ChevronLeft, MoveHorizontal as MoreHorizontal } from 'lucide-react-native';
@@ -111,7 +111,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   if (variant === 'gradient') {
     return (
       <>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <LinearGradient
           colors={['#667eea', '#764ba2']}
           start={{ x: 0, y: 0 }}
@@ -130,7 +130,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   if (variant === 'glass') {
     return (
       <>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+        <RNStatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
         {Platform.OS === 'ios' ? (
           <BlurView intensity={80} style={[
             styles.container, 
@@ -157,7 +157,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   if (variant === 'minimal') {
     return (
       <>
-        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <RNStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <View style={[
           styles.container, 
           styles.minimal,
@@ -171,7 +171,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#667eea" />
+      <RNStatusBar barStyle="light-content" backgroundColor="#667eea" />
       <View style={[
         styles.container, 
         styles.default,
@@ -185,12 +185,12 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 0 + 10,
+    paddingTop: Platform.OS === 'ios' ? 50 : (RNStatusBar.currentHeight || 0) + 10,
     paddingBottom: 16,
     paddingHorizontal: 20,
   },
   tabletContainer: {
-    paddingTop: Platform.OS === 'ios' ? 60 : StatusBar.currentHeight || 0 + 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : (RNStatusBar.currentHeight || 0) + 20,
     paddingBottom: 24,
     paddingHorizontal: 32,
   },
