@@ -21,6 +21,7 @@ interface OrderStatusModalProps {
   currentStatus: string;
   onUpdateStatus: (status: string, notes: string) => Promise<void>;
   isLoading?: boolean;
+  initialSelectedStatus?: string;
 }
 
 // Define valid status transitions
@@ -120,20 +121,21 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
   currentStatus,
   onUpdateStatus,
   isLoading = false,
+  initialSelectedStatus = '',
 }) => {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const isTabletDevice = isTablet();
 
-  // Reset state when modal opens
+  // Reset state when modal opens and set initial selected status if provided
   useEffect(() => {
     if (visible) {
-      setSelectedStatus('');
+      setSelectedStatus(initialSelectedStatus);
       setNotes('');
       setError(null);
     }
-  }, [visible]);
+  }, [visible, initialSelectedStatus]);
 
   // Get available status options based on current status
   const getAvailableStatuses = () => {
@@ -143,14 +145,6 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
 
   const handleSubmit = async () => {
     if (!selectedStatus) return;
-    
-    // Special validation for Processing to Picked transition
-    if (currentStatus.toLowerCase() === 'processing' && selectedStatus.toLowerCase() === 'picked') {
-      // In a real app, we would check if all items have been marked as picked
-      // For now, we'll just show an error message
-      setError('To mark as Picked, you must first check each item as picked from the order details screen.');
-      return;
-    }
     
     setError(null);
     await onUpdateStatus(selectedStatus, notes);
@@ -260,11 +254,6 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
                     onPress={() => {
                       setSelectedStatus(status);
                       setError(null);
-                      
-                      // Show warning for Processing to Picked transition
-                      if (currentStatus.toLowerCase() === 'processing' && status.toLowerCase() === 'picked') {
-                        setError('Note: To mark as Picked, all items should be checked as picked from the order details screen.');
-                      }
                     }}
                   >
                     <View style={styles.statusOptionHeader}>

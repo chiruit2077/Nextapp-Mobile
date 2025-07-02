@@ -107,6 +107,7 @@ export default function OrderDetailsScreen() {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [statusNotes, setStatusNotes] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [selectedNewStatus, setSelectedNewStatus] = useState<string>('');
   const isTabletDevice = isTablet();
 
   const canEdit = ['admin', 'manager'].includes(user?.role || '');
@@ -425,6 +426,16 @@ export default function OrderDetailsScreen() {
     return order?.items?.reduce((sum, item) => sum + calculateItemTotal(item), 0) || order?.totalAmount || 0;
   };
 
+  const handleOpenStatusModal = () => {
+    // Set the default new status to "Picked" if all items are picked and current status is "Processing"
+    if (areAllItemsPicked() && (order?.status || order?.Order_Status || '').toLowerCase() === 'processing') {
+      setSelectedNewStatus('Picked');
+    } else {
+      setSelectedNewStatus('');
+    }
+    setShowStatusModal(true);
+  };
+
   if (isLoading) {
     return <LoadingSpinner fullScreen text="Loading order details..." />;
   }
@@ -493,7 +504,7 @@ export default function OrderDetailsScreen() {
           {canUpdateStatus && (
             <TouchableOpacity
               style={styles.updateStatusButton}
-              onPress={() => setShowStatusModal(true)}
+              onPress={handleOpenStatusModal}
             >
               <Edit3 size={16} color="#667eea" />
               <Text style={styles.updateStatusText}>Update Status</Text>
@@ -614,6 +625,7 @@ export default function OrderDetailsScreen() {
                 title="Update to Picked"
                 onPress={() => {
                   if (areAllItemsPicked()) {
+                    setSelectedNewStatus('Picked');
                     setShowStatusModal(true);
                   } else {
                     showToast('All items must be picked before changing status', 'warning');
@@ -763,6 +775,7 @@ export default function OrderDetailsScreen() {
         currentStatus={order.status || order.Order_Status || ''}
         onUpdateStatus={handleUpdateStatus}
         isLoading={isUpdatingStatus}
+        initialSelectedStatus={selectedNewStatus}
       />
     </PlatformSafeAreaView>
   );
