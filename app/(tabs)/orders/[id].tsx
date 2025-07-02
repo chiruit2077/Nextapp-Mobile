@@ -803,8 +803,11 @@ export default function OrderDetailsScreen() {
               </View>
               
               <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.partName || item.part?.name || item.Part_Name || 'Unknown Part'}</Text>
+                <Text style={styles.itemName} numberOfLines={2}>
+                  {item.partName || item.part?.name || item.Part_Name || 'Unknown Part'}
+                </Text>
                 <Text style={styles.itemNumber}>#{item.partNumber || item.Part_Admin}</Text>
+                
                 {item.part?.category && (
                   <Text style={styles.itemCategory}>{item.part.category}</Text>
                 )}
