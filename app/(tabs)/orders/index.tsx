@@ -917,11 +917,9 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 120,
-    paddingHorizontal: 20,
   },
   tabletListContent: {
     paddingBottom: 140,
-    paddingHorizontal: 32,
   },
   emptyListContent: {
     flexGrow: 1,
