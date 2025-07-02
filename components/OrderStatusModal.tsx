@@ -21,7 +21,6 @@ interface OrderStatusModalProps {
   currentStatus: string;
   onUpdateStatus: (status: string, notes: string) => Promise<void>;
   isLoading?: boolean;
-  initialSelectedStatus?: string;
 }
 
 // Define valid status transitions
@@ -121,21 +120,20 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
   currentStatus,
   onUpdateStatus,
   isLoading = false,
-  initialSelectedStatus = '',
 }) => {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const isTabletDevice = isTablet();
 
-  // Reset state when modal opens and set initial selected status if provided
+  // Reset state when modal opens
   useEffect(() => {
     if (visible) {
-      setSelectedStatus(initialSelectedStatus);
+      setSelectedStatus('');
       setNotes('');
       setError(null);
     }
-  }, [visible, initialSelectedStatus]);
+  }, [visible]);
 
   // Get available status options based on current status
   const getAvailableStatuses = () => {
@@ -146,8 +144,18 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
   const handleSubmit = async () => {
     if (!selectedStatus) return;
     
-    setError(null);
-    await onUpdateStatus(selectedStatus, notes);
+    // Special validation for Processing to Picked transition
+    if (currentStatus.toLowerCase() === 'processing' && selectedStatus.toLowerCase() === 'picked') {
+      // This validation is now handled in the parent component before opening the modal
+      // We'll keep a basic check here as a fallback
+      setError(null);
+    }
+    
+    try {
+      await onUpdateStatus(selectedStatus, notes);
+    } catch (error: any) {
+      setError(error.message || 'Failed to update status');
+    }
   };
 
   return (

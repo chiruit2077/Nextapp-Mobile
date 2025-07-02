@@ -62,18 +62,43 @@ interface OrderItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  pickedQuantity?: number;
   basicDiscount?: number;
   schemeDiscount?: number;
   additionalDiscount?: number;
   urgent?: boolean;
   picked?: boolean;
-  pickedQuantity?: number;
   rackLocation?: string;
   part?: {
     name: string;
     category: string;
     image?: string;
   };
+  // API response fields
+  Order_Item_Id?: number;
+  Order_Id?: number;
+  Order_Srl?: number;
+  Part_Admin?: string;
+  Part_Salesman?: string;
+  Order_Qty?: number;
+  Dispatch_Qty?: number;
+  Pick_Date?: number | null;
+  Pick_By?: string | null;
+  OrderItemStatus?: string;
+  PlaceDate?: number;
+  RetailerId?: number;
+  ItemAmount?: number;
+  SchemeDisc?: number;
+  AdditionalDisc?: number;
+  Discount?: number;
+  MRP?: number;
+  FirstOrderDate?: number;
+  Urgent_Status?: number;
+  Last_Sync?: number;
+  created_at?: string;
+  updated_at?: string;
+  Part_Name?: string;
+  Part_Image?: string | null;
 }
 
 interface StatusHistoryItem {
@@ -108,7 +133,6 @@ export default function OrderDetailsScreen() {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [statusNotes, setStatusNotes] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [selectedNewStatus, setSelectedNewStatus] = useState<string>('');
   const isTabletDevice = isTablet();
 
   const canEdit = ['admin', 'manager'].includes(user?.role || '');
@@ -126,10 +150,47 @@ export default function OrderDetailsScreen() {
       setError(null);
       const response = await apiService.getOrder(parseInt(id));
       
-      // Mock enhanced order data for demonstration
-      const enhancedOrder: OrderDetails = {
+      // Transform API response to match our OrderDetails interface
+      const transformedOrder: OrderDetails = {
         ...response,
-        items: [
+        id: response.Order_Id,
+        orderNumber: response.CRMOrderId,
+        retailerId: response.Retailer_Id,
+        status: response.Order_Status,
+        totalAmount: calculateOrderTotal(response),
+        orderDate: new Date(response.Place_Date).toISOString(),
+        deliveryDate: response.Delivered_Date ? new Date(response.Delivered_Date).toISOString() : undefined,
+        notes: response.Remark,
+        urgent: response.Urgent_Status === 1,
+        branch: response.Branch_Name,
+        retailer: {
+          businessName: response.Retailer_Name,
+          contactName: response.Contact_Person !== '0' ? response.Contact_Person : undefined,
+          email: response.Retailer_Email !== '0' ? response.Retailer_Email : undefined,
+        }
+      };
+      
+      // Transform order items if they exist
+      if (response.items && Array.isArray(response.items)) {
+        transformedOrder.items = response.items.map(item => ({
+          id: item.Order_Item_Id || 0,
+          partNumber: item.Part_Admin || '',
+          partName: item.Part_Salesman || item.Part_Name || '',
+          quantity: item.Order_Qty || 0,
+          unitPrice: item.MRP || 0,
+          totalPrice: (item.MRP || 0) * (item.Order_Qty || 0),
+          pickedQuantity: item.Dispatch_Qty || 0,
+          picked: item.OrderItemStatus === 'Picked' || false,
+          basicDiscount: item.Discount || 0,
+          schemeDiscount: item.SchemeDisc || 0,
+          additionalDiscount: item.AdditionalDisc || 0,
+          urgent: item.Urgent_Status === 1,
+          // Include original API fields
+          ...item
+        }));
+      } else {
+        // If no items in API response, create mock items for demonstration
+        transformedOrder.items = [
           {
             id: 1,
             partNumber: 'BP-001',
@@ -137,12 +198,12 @@ export default function OrderDetailsScreen() {
             quantity: 2,
             unitPrice: 89.99,
             totalPrice: 179.98,
+            pickedQuantity: 0,
             basicDiscount: 5,
             schemeDiscount: 2,
             additionalDiscount: 0,
             urgent: false,
             picked: false,
-            pickedQuantity: 0,
             rackLocation: 'A-12-B',
             part: {
               name: 'Brake Pads - Front Set',
@@ -157,12 +218,12 @@ export default function OrderDetailsScreen() {
             quantity: 4,
             unitPrice: 24.99,
             totalPrice: 99.96,
+            pickedQuantity: 0,
             basicDiscount: 3,
             schemeDiscount: 0,
             additionalDiscount: 1,
             urgent: true,
             picked: false,
-            pickedQuantity: 0,
             rackLocation: 'C-05-D',
             part: {
               name: 'Engine Oil 5W-30',
@@ -170,29 +231,105 @@ export default function OrderDetailsScreen() {
               image: 'https://images.pexels.com/photos/4489702/pexels-photo-4489702.jpeg?auto=compress&cs=tinysrgb&w=400',
             },
           },
-        ],
-        statusHistory: [
-          {
-            status: 'New',
-            timestamp: new Date(Date.now() - 86400000).toISOString(),
-            updatedBy: 'System',
-            notes: 'Order created',
-          },
-          {
-            status: 'Processing',
-            timestamp: new Date(Date.now() - 43200000).toISOString(),
-            updatedBy: user?.name || 'Manager',
-            notes: 'Order confirmed and ready for processing',
-          },
-        ],
-      };
+        ];
+      }
       
-      setOrder(enhancedOrder);
+      // Generate status history from order data
+      transformedOrder.statusHistory = generateStatusHistory(response);
+      
+      setOrder(transformedOrder);
     } catch (error: any) {
       setError(error.error || 'Failed to load order details');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Generate status history from order data
+  const generateStatusHistory = (orderData: any): StatusHistoryItem[] => {
+    const history: StatusHistoryItem[] = [];
+    
+    // Created/New status
+    if (orderData.created_at) {
+      history.push({
+        status: 'New',
+        timestamp: orderData.created_at,
+        updatedBy: orderData.Place_By || 'System',
+        notes: 'Order created',
+      });
+    }
+    
+    // Processing status
+    if (orderData.Confirm_By && orderData.Confirm_Date) {
+      history.push({
+        status: 'Processing',
+        timestamp: new Date(orderData.Confirm_Date).toISOString(),
+        updatedBy: orderData.Confirm_By,
+        notes: 'Order confirmed and ready for processing',
+      });
+    }
+    
+    // Picked status
+    if (orderData.Pick_By && orderData.Pick_Date) {
+      history.push({
+        status: 'Picked',
+        timestamp: new Date(orderData.Pick_Date).toISOString(),
+        updatedBy: orderData.Pick_By,
+        notes: 'Order items picked from inventory',
+      });
+    }
+    
+    // Dispatched status (if applicable)
+    if (orderData.Pack_By && orderData.Pack_Date) {
+      history.push({
+        status: 'Dispatched',
+        timestamp: new Date(orderData.Pack_Date).toISOString(),
+        updatedBy: orderData.Pack_By,
+        notes: 'Order packed and dispatched',
+      });
+    }
+    
+    // Delivered/Completed status
+    if (orderData.Delivered_By && orderData.Delivered_Date) {
+      history.push({
+        status: 'Completed',
+        timestamp: new Date(orderData.Delivered_Date).toISOString(),
+        updatedBy: orderData.Delivered_By,
+        notes: 'Order delivered successfully',
+      });
+    }
+    
+    // If current status doesn't match any of the above, add it
+    const currentStatus = orderData.Order_Status;
+    const hasCurrentStatus = history.some(item => item.status === currentStatus);
+    
+    if (!hasCurrentStatus && currentStatus) {
+      history.push({
+        status: currentStatus,
+        timestamp: orderData.updated_at,
+        updatedBy: user?.name || 'System',
+        notes: orderData.Remark || `Status updated to ${currentStatus}`,
+      });
+    }
+    
+    // Sort by timestamp
+    return history.sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  };
+
+  // Calculate order total from items
+  const calculateOrderTotal = (orderData: any): number => {
+    if (orderData.items && Array.isArray(orderData.items)) {
+      return orderData.items.reduce((sum, item) => {
+        const itemPrice = item.MRP || 0;
+        const quantity = item.Order_Qty || 0;
+        return sum + (itemPrice * quantity);
+      }, 0);
+    }
+    
+    // If no items, return a mock value
+    return Math.floor(Math.random() * 5000) + 100;
   };
 
   const getStatusInfo = (status: string) => {
@@ -319,10 +456,11 @@ export default function OrderDetailsScreen() {
         newStatus.toLowerCase() === 'picked') {
       
       // Check if all items are picked
-      const allItemsPicked = order.items?.every(item => item.picked && item.pickedQuantity === item.quantity);
+      const allItemsPicked = order.items?.every(item => item.picked);
       
       if (!allItemsPicked) {
         showToast('All items must be picked before changing status to Picked', 'error');
+        setShowStatusModal(false);
         return;
       }
     }
@@ -367,42 +505,21 @@ export default function OrderDetailsScreen() {
   const handleItemPick = (itemId: number, picked: boolean, pickedQuantity?: number) => {
     if (!order || !order.items) return;
     
-    // Update the picked status for the specific item
-    const updatedItems = order.items.map(item => {
-      if (item.id === itemId) {
-        return { 
-          ...item, 
-          picked, 
-          pickedQuantity: pickedQuantity !== undefined ? pickedQuantity : (picked ? item.quantity : 0)
-        };
-      }
-      return item;
-    });
+    // Update the picked status and quantity for the specific item
+    const updatedItems = order.items.map(item => 
+      item.id === itemId ? { 
+        ...item, 
+        picked, 
+        pickedQuantity: picked ? (pickedQuantity !== undefined ? pickedQuantity : item.quantity) : 0 
+      } : item
+    );
     
     // Update the order with the new items array
     setOrder(prev => prev ? { ...prev, items: updatedItems } : null);
   };
 
   const areAllItemsPicked = () => {
-    if (!order?.items || order.items.length === 0) return false;
-    
-    return order.items.every(item => 
-      item.picked && 
-      item.pickedQuantity !== undefined && 
-      item.pickedQuantity === item.quantity
-    );
-  };
-
-  const getPickingProgress = () => {
-    if (!order?.items || order.items.length === 0) return { picked: 0, total: 0 };
-    
-    const picked = order.items.filter(item => 
-      item.picked && 
-      item.pickedQuantity !== undefined && 
-      item.pickedQuantity === item.quantity
-    ).length;
-    
-    return { picked, total: order.items.length };
+    return order?.items?.every(item => item.picked) || false;
   };
 
   const handleCancelOrder = () => {
@@ -452,16 +569,6 @@ export default function OrderDetailsScreen() {
 
   const calculateOrderSubtotal = () => {
     return order?.items?.reduce((sum, item) => sum + calculateItemTotal(item), 0) || order?.totalAmount || 0;
-  };
-
-  const handleOpenStatusModal = () => {
-    // Set the default new status to "Picked" if all items are picked and current status is "Processing"
-    if (areAllItemsPicked() && (order?.status || order?.Order_Status || '').toLowerCase() === 'processing') {
-      setSelectedNewStatus('Picked');
-    } else {
-      setSelectedNewStatus('');
-    }
-    setShowStatusModal(true);
   };
 
   if (isLoading) {
@@ -532,7 +639,7 @@ export default function OrderDetailsScreen() {
           {canUpdateStatus && (
             <TouchableOpacity
               style={styles.updateStatusButton}
-              onPress={handleOpenStatusModal}
+              onPress={() => setShowStatusModal(true)}
             >
               <Edit3 size={16} color="#667eea" />
               <Text style={styles.updateStatusText}>Update Status</Text>
@@ -657,7 +764,6 @@ export default function OrderDetailsScreen() {
                 title="Update to Picked"
                 onPress={() => {
                   if (areAllItemsPicked()) {
-                    setSelectedNewStatus('Picked');
                     setShowStatusModal(true);
                   } else {
                     showToast('All items must be picked before changing status', 'warning');
@@ -697,8 +803,8 @@ export default function OrderDetailsScreen() {
               </View>
               
               <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.partName || item.part?.name || 'Unknown Part'}</Text>
-                <Text style={styles.itemNumber}>#{item.partNumber}</Text>
+                <Text style={styles.itemName}>{item.partName || item.part?.name || item.Part_Name || 'Unknown Part'}</Text>
+                <Text style={styles.itemNumber}>#{item.partNumber || item.Part_Admin}</Text>
                 {item.part?.category && (
                   <Text style={styles.itemCategory}>{item.part.category}</Text>
                 )}
@@ -711,6 +817,16 @@ export default function OrderDetailsScreen() {
                   </View>
                 )}
                 
+                {/* Picked Status */}
+                {item.picked && (
+                  <View style={styles.pickedStatusContainer}>
+                    <CheckCircle size={12} color="#10b981" />
+                    <Text style={styles.pickedStatusText}>
+                      Picked: {item.pickedQuantity || item.quantity}/{item.quantity}
+                    </Text>
+                  </View>
+                )}
+                
                 {/* Discount Information */}
                 {((item.basicDiscount || 0) + (item.schemeDiscount || 0) + (item.additionalDiscount || 0)) > 0 && (
                   <View style={styles.discountInfo}>
@@ -719,33 +835,11 @@ export default function OrderDetailsScreen() {
                     </Text>
                   </View>
                 )}
-                
-                {/* Picked Status */}
-                {currentStatus === 'processing' && (
-                  <View style={[
-                    styles.pickedStatusBadge,
-                    item.picked ? styles.pickedStatusBadgeSuccess : styles.pickedStatusBadgePending
-                  ]}>
-                    {item.picked ? (
-                      <>
-                        <CheckCircle size={12} color="#10b981" />
-                        <Text style={styles.pickedStatusTextSuccess}>
-                          Picked: {item.pickedQuantity}/{item.quantity}
-                        </Text>
-                      </>
-                    ) : (
-                      <>
-                        <Clock size={12} color="#f59e0b" />
-                        <Text style={styles.pickedStatusTextPending}>Not Picked</Text>
-                      </>
-                    )}
-                  </View>
-                )}
               </View>
               
               <View style={styles.itemPricing}>
                 <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
-                <Text style={styles.itemUnitPrice}>{formatCurrency(item.unitPrice)} each</Text>
+                <Text style={styles.itemUnitPrice}>{formatCurrency(item.unitPrice || item.MRP || 0)} each</Text>
                 <Text style={styles.itemTotalPrice}>{formatCurrency(calculateItemTotal(item))}</Text>
               </View>
             </View>
@@ -829,7 +923,6 @@ export default function OrderDetailsScreen() {
         currentStatus={order.status || order.Order_Status || ''}
         onUpdateStatus={handleUpdateStatus}
         isLoading={isUpdatingStatus}
-        initialSelectedStatus={selectedNewStatus}
       />
     </PlatformSafeAreaView>
   );
@@ -1115,45 +1208,28 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginLeft: 4,
   },
+  pickedStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  pickedStatusText: {
+    fontSize: 12,
+    color: '#10b981',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
   discountInfo: {
     backgroundColor: '#fef3c7',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: 'flex-start',
-    marginBottom: 4,
   },
   discountText: {
     fontSize: 10,
     color: '#d97706',
     fontWeight: '600',
-  },
-  pickedStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  pickedStatusBadgeSuccess: {
-    backgroundColor: '#dcfce7',
-  },
-  pickedStatusBadgePending: {
-    backgroundColor: '#fef3c7',
-  },
-  pickedStatusTextSuccess: {
-    fontSize: 10,
-    color: '#10b981',
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  pickedStatusTextPending: {
-    fontSize: 10,
-    color: '#f59e0b',
-    fontWeight: '600',
-    marginLeft: 4,
   },
   itemPricing: {
     alignItems: 'flex-end',

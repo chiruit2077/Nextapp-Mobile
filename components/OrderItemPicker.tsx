@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Platform,
   TextInput,
 } from 'react-native';
-import { CircleCheck as CheckCircle, Circle, Package, MapPin, CircleAlert as AlertCircle, Minus, Plus } from 'lucide-react-native';
+import { CheckCircle, Circle, Package, MapPin, AlertCircle, Plus, Minus } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { isTablet } from '@/hooks/useResponsiveStyles';
 
@@ -49,33 +49,19 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
     }).format(amount);
   };
 
-  const allItemsPicked = items.every(item => 
-    item.picked && 
-    item.pickedQuantity !== undefined && 
-    item.pickedQuantity === item.quantity
-  );
-
-  const getPickingProgress = () => {
-    const picked = items.filter(item => 
-      item.picked && 
-      item.pickedQuantity !== undefined && 
-      item.pickedQuantity === item.quantity
-    ).length;
-    
-    return { picked, total: items.length };
-  };
-
-  const progress = getPickingProgress();
+  const allItemsPicked = items.every(item => item.picked);
+  const hasPartialPicks = items.some(item => item.picked && (item.pickedQuantity || 0) < item.quantity);
 
   const handleQuantityChange = (item: OrderItem, newQuantity: number) => {
-    // Ensure quantity is within valid range
+    // Ensure quantity is not negative and doesn't exceed order quantity
     const validQuantity = Math.max(0, Math.min(newQuantity, item.quantity));
     
-    // Update picked status based on quantity
-    const isPicked = validQuantity > 0;
-    
-    // Call the parent handler
-    onItemPick(item.id, isPicked, validQuantity);
+    // If quantity is 0, uncheck the item
+    if (validQuantity === 0) {
+      onItemPick(item.id, false, 0);
+    } else {
+      onItemPick(item.id, true, validQuantity);
+    }
   };
 
   return (
@@ -103,7 +89,7 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
             <>
               <AlertCircle size={isTabletDevice ? 16 : 14} color="#f59e0b" />
               <Text style={[styles.statusText, { color: '#f59e0b' }, isTabletDevice && styles.tabletStatusText]}>
-                {progress.picked} of {progress.total} Picked
+                {items.filter(item => item.picked).length} of {items.length} Picked
               </Text>
             </>
           )}
@@ -120,12 +106,7 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
                 disabled && styles.disabledCheckbox,
                 isTabletDevice && styles.tabletCheckboxContainer
               ]}
-              onPress={() => {
-                if (disabled) return;
-                const newPickedState = !item.picked;
-                const newQuantity = newPickedState ? item.quantity : 0;
-                onItemPick(item.id, newPickedState, newQuantity);
-              }}
+              onPress={() => !disabled && onItemPick(item.id, !item.picked, item.picked ? 0 : item.quantity)}
               disabled={disabled}
             >
               {item.picked ? (
@@ -171,59 +152,28 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
                 </View>
               )}
               
-              {/* Quantity Picker */}
               <View style={styles.quantityContainer}>
-                <Text style={styles.quantityLabel}>
-                  Ordered: <Text style={styles.quantityValue}>{item.quantity}</Text>
+                <Text style={[styles.quantityLabel, isTabletDevice && styles.tabletQuantityLabel]}>
+                  Order Qty: {item.quantity}
                 </Text>
                 
-                <View style={styles.quantityPicker}>
-                  <TouchableOpacity
-                    style={styles.quantityButton}
-                    onPress={() => {
-                      if (disabled) return;
-                      const currentQty = item.pickedQuantity || 0;
-                      if (currentQty > 0) {
-                        handleQuantityChange(item, currentQty - 1);
-                      }
-                    }}
-                    disabled={disabled || !(item.pickedQuantity && item.pickedQuantity > 0)}
-                  >
-                    <Minus 
-                      size={16} 
-                      color={(disabled || !(item.pickedQuantity && item.pickedQuantity > 0)) ? "#cbd5e1" : "#64748b"} 
-                    />
-                  </TouchableOpacity>
-                  
-                  <TextInput
-                    style={styles.quantityInput}
-                    value={String(item.pickedQuantity || 0)}
-                    onChangeText={(text) => {
-                      if (disabled) return;
-                      const newQty = parseInt(text) || 0;
-                      handleQuantityChange(item, newQty);
-                    }}
-                    keyboardType="numeric"
-                    editable={!disabled}
-                  />
-                  
-                  <TouchableOpacity
-                    style={styles.quantityButton}
-                    onPress={() => {
-                      if (disabled) return;
-                      const currentQty = item.pickedQuantity || 0;
-                      if (currentQty < item.quantity) {
-                        handleQuantityChange(item, currentQty + 1);
-                      }
-                    }}
-                    disabled={disabled || (item.pickedQuantity === item.quantity)}
-                  >
-                    <Plus 
-                      size={16} 
-                      color={(disabled || (item.pickedQuantity === item.quantity)) ? "#cbd5e1" : "#64748b"} 
-                    />
-                  </TouchableOpacity>
-                </View>
+                {item.picked && (
+                  <View style={styles.pickedQuantityContainer}>
+                    <Text style={[
+                      styles.pickedQuantityLabel, 
+                      isTabletDevice && styles.tabletPickedQuantityLabel,
+                      (item.pickedQuantity || 0) < item.quantity && styles.partialQuantityLabel
+                    ]}>
+                      Picked: {item.pickedQuantity || 0}/{item.quantity}
+                    </Text>
+                    
+                    {(item.pickedQuantity || 0) < item.quantity && (
+                      <View style={styles.partialBadge}>
+                        <Text style={styles.partialBadgeText}>Partial</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
             </View>
             
@@ -232,21 +182,34 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
                 {formatCurrency(item.totalPrice)}
               </Text>
               
-              {/* Picking Status */}
-              {item.picked && item.pickedQuantity === item.quantity ? (
-                <View style={styles.fullyPickedBadge}>
-                  <CheckCircle size={14} color="#10b981" />
-                  <Text style={styles.fullyPickedText}>Complete</Text>
-                </View>
-              ) : item.picked && item.pickedQuantity !== undefined && item.pickedQuantity < item.quantity ? (
-                <View style={styles.partiallyPickedBadge}>
-                  <AlertCircle size={14} color="#f59e0b" />
-                  <Text style={styles.partiallyPickedText}>Partial</Text>
-                </View>
-              ) : (
-                <View style={styles.notPickedBadge}>
-                  <Circle size={14} color="#64748b" />
-                  <Text style={styles.notPickedText}>Not Picked</Text>
+              {item.picked && (
+                <View style={styles.quantityControls}>
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => handleQuantityChange(item, (item.pickedQuantity || 0) - 1)}
+                    disabled={disabled || (item.pickedQuantity || 0) <= 0}
+                  >
+                    <Minus size={16} color={(item.pickedQuantity || 0) <= 0 ? "#cbd5e1" : "#64748b"} />
+                  </TouchableOpacity>
+                  
+                  <TextInput
+                    style={styles.quantityInput}
+                    value={String(item.pickedQuantity || 0)}
+                    onChangeText={(text) => {
+                      const newQuantity = parseInt(text) || 0;
+                      handleQuantityChange(item, newQuantity);
+                    }}
+                    keyboardType="numeric"
+                    editable={!disabled}
+                  />
+                  
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => handleQuantityChange(item, (item.pickedQuantity || 0) + 1)}
+                    disabled={disabled || (item.pickedQuantity || 0) >= item.quantity}
+                  >
+                    <Plus size={16} color={(item.pickedQuantity || 0) >= item.quantity ? "#cbd5e1" : "#64748b"} />
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
@@ -259,6 +222,15 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
           <AlertCircle size={16} color="#f59e0b" />
           <Text style={styles.infoText}>
             All items must be picked before changing order status to "Picked"
+          </Text>
+        </View>
+      )}
+      
+      {hasPartialPicks && !disabled && (
+        <View style={styles.warningContainer}>
+          <AlertCircle size={16} color="#ef4444" />
+          <Text style={styles.warningText}>
+            Some items have partial quantities. You can still proceed with the picked status.
           </Text>
         </View>
       )}
@@ -396,7 +368,7 @@ const styles = StyleSheet.create({
   rackContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   rackText: {
     fontSize: 12,
@@ -408,20 +380,56 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   quantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginTop: 4,
   },
   quantityLabel: {
     fontSize: 12,
     color: '#64748b',
   },
-  quantityValue: {
-    fontWeight: '600',
-    color: '#1e293b',
+  tabletQuantityLabel: {
+    fontSize: 14,
   },
-  quantityPicker: {
+  pickedQuantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  pickedQuantityLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10b981',
+  },
+  tabletPickedQuantityLabel: {
+    fontSize: 14,
+  },
+  partialQuantityLabel: {
+    color: '#f59e0b',
+  },
+  partialBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 6,
+  },
+  partialBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#f59e0b',
+  },
+  itemDetails: {
+    alignItems: 'flex-end',
+  },
+  priceText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#059669',
+    marginBottom: 8,
+  },
+  tabletPriceText: {
+    fontSize: 16,
+  },
+  quantityControls: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f8fafc',
@@ -435,7 +443,6 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f1f5f9',
   },
   quantityInput: {
     width: 32,
@@ -443,61 +450,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1e293b',
-  },
-  itemDetails: {
-    alignItems: 'flex-end',
-  },
-  priceText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#059669',
-    marginBottom: 8,
-  },
-  tabletPriceText: {
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  fullyPickedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#dcfce7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
-  },
-  fullyPickedText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#10b981',
-  },
-  partiallyPickedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fef3c7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
-  },
-  partiallyPickedText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#f59e0b',
-  },
-  notPickedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
-  },
-  notPickedText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#64748b',
   },
   infoContainer: {
     flexDirection: 'row',
@@ -512,6 +464,22 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     color: '#f59e0b',
+    marginLeft: 8,
+    flex: 1,
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  warningText: {
+    fontSize: 14,
+    color: '#ef4444',
     marginLeft: 8,
     flex: 1,
   },

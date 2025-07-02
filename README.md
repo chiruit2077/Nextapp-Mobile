@@ -8,7 +8,7 @@
   **Professional field management app for auto parts dealers**
   
   [![Expo](https://img.shields.io/badge/Expo-53.0.0-blue.svg)](https://expo.dev/)
-  [![React Native](https://img.shields.io/badge/React%20Native-0.79.1-green.svg)](https://reactnative.dev/)
+  [![React Native](https://img.shields.io/badge/React%20Native-0.79.4-green.svg)](https://reactnative.dev/)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
   [![Production Ready](https://img.shields.io/badge/Production-Ready-green.svg)](#)
 </div>
@@ -164,6 +164,9 @@ nextapp-autoparts-mobile/
 ├── 📝 types/                        # TypeScript definitions
 │   ├── api.ts                       # API interfaces
 │   └── env.d.ts                     # Environment variables
+├── 📋 docs/                         # Documentation
+│   ├── ORDER_MANAGEMENT.md          # Order management documentation
+│   └── ORDER_STATUS_MANAGEMENT.md   # Order status workflow documentation
 └── 📋 README.md                     # Project documentation
 ```
 
