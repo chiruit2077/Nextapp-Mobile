@@ -29,7 +29,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   subtitle,
   leftButton,
   rightButton,
-  variant = 'default',
+  variant = 'gradient',
   showBackButton = false,
   onBackPress,
 }) => {
@@ -126,7 +126,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
     return 'transparent';
   };
 
-  if (variant === 'gradient') {
+  if (variant === 'gradient' || variant === 'default') {
     return (
       <>
         <StatusBar 
