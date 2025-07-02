@@ -3,11 +3,13 @@ import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { Chrome as Home, User, ShoppingCart, ChartBar as BarChart3 } from 'lucide-react-native';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { isTablet } from '@/hooks/useResponsiveStyles';
 
 export default function TabLayout() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const isTabletDevice = isTablet();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -54,6 +56,24 @@ export default function TabLayout() {
   // Check if user should have access to reports
   const hasReportsAccess = ['super_admin', 'admin', 'manager', 'storeman', 'salesman'].includes(user.role);
 
+  // Platform-specific tab bar height
+  const getTabBarHeight = () => {
+    if (Platform.OS === 'ios') {
+      return isTabletDevice ? 88 : 88;
+    } else {
+      return isTabletDevice ? 80 : 70;
+    }
+  };
+
+  // Platform-specific bottom padding
+  const getBottomPadding = () => {
+    if (Platform.OS === 'ios') {
+      return isTabletDevice ? 24 : 32;
+    } else {
+      return isTabletDevice ? 20 : 16;
+    }
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -63,9 +83,9 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: Platform.OS === 'ios' ? 'transparent' : '#FFFFFF',
           borderTopWidth: 0,
-          height: Platform.OS === 'ios' ? 88 : 70,
+          height: getTabBarHeight(),
           paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 32 : 16,
+          paddingBottom: getBottomPadding(),
           shadowColor: '#000',
           shadowOffset: {
             width: 0,
@@ -82,9 +102,10 @@ export default function TabLayout() {
           ) : null
         ),
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: isTabletDevice ? 13 : 11,
           fontWeight: '600',
           marginTop: 4,
+          fontFamily: 'Inter-SemiBold',
         },
         tabBarIconStyle: {
           marginTop: 4,
@@ -96,7 +117,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ size, color }) => <Home size={size} color={color} />,
+          tabBarIcon: ({ size, color }) => <Home size={isTabletDevice ? size + 4 : size} color={color} />,
           tabBarAccessibilityLabel: 'Dashboard',
         }}
       />
@@ -106,7 +127,7 @@ export default function TabLayout() {
         name="orders"
         options={{
           title: getOrdersTitle(user.role),
-          tabBarIcon: ({ size, color }) => <ShoppingCart size={size} color={color} />,
+          tabBarIcon: ({ size, color }) => <ShoppingCart size={isTabletDevice ? size + 4 : size} color={color} />,
           tabBarAccessibilityLabel: 'Orders',
         }}
       />
@@ -117,7 +138,7 @@ export default function TabLayout() {
           name="reports"
           options={{
             title: getReportsTitle(user.role),
-            tabBarIcon: ({ size, color }) => <BarChart3 size={size} color={color} />,
+            tabBarIcon: ({ size, color }) => <BarChart3 size={isTabletDevice ? size + 4 : size} color={color} />,
             tabBarAccessibilityLabel: 'Reports',
           }}
         />
@@ -128,7 +149,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+          tabBarIcon: ({ size, color }) => <User size={isTabletDevice ? size + 4 : size} color={color} />,
           tabBarAccessibilityLabel: 'Profile',
         }}
       />

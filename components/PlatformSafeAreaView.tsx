@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, Platform, StatusBar, SafeAreaView } from 'react-native';
+import { View, StyleSheet, Platform, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface PlatformSafeAreaViewProps {
   children: React.ReactNode;
@@ -12,44 +13,24 @@ export const PlatformSafeAreaView: React.FC<PlatformSafeAreaViewProps> = ({
   style,
   edges = ['top', 'right', 'bottom', 'left'],
 }) => {
-  // Calculate platform-specific top padding
-  const getTopPadding = () => {
-    if (Platform.OS === 'android') {
-      return StatusBar.currentHeight || 0;
-    }
-    return 0;
-  };
-
-  // Calculate platform-specific bottom padding
-  const getBottomPadding = () => {
-    if (Platform.OS === 'ios') {
-      // iPhone X and newer have a bottom safe area
-      return Platform.isPad ? 20 : 34;
-    }
-    return 0;
-  };
-
-  // Apply padding based on specified edges
-  const getPadding = () => {
-    const padding = {
-      paddingTop: edges.includes('top') ? getTopPadding() : 0,
-      paddingRight: edges.includes('right') ? 0 : 0,
-      paddingBottom: edges.includes('bottom') ? getBottomPadding() : 0,
-      paddingLeft: edges.includes('left') ? 0 : 0,
-    };
-    return padding;
-  };
-
+  // For iOS, use SafeAreaView
   if (Platform.OS === 'ios') {
     return (
-      <SafeAreaView style={[styles.container, style]}>
+      <SafeAreaView style={[styles.container, style]} edges={edges}>
         {children}
       </SafeAreaView>
     );
   }
 
+  // For Android, use View with StatusBar height padding
   return (
-    <View style={[styles.container, getPadding(), style]}>
+    <View 
+      style={[
+        styles.container, 
+        { paddingTop: edges.includes('top') ? StatusBar.currentHeight || 0 : 0 },
+        style
+      ]}
+    >
       {children}
     </View>
   );
