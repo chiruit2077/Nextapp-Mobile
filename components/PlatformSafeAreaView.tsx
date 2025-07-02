@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Platform, StatusBar } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { isTablet } from '@/hooks/useResponsiveStyles';
 
 interface PlatformSafeAreaViewProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ export const PlatformSafeAreaView: React.FC<PlatformSafeAreaViewProps> = ({
   gradientColors = ['#667eea', '#764ba2'],
 }) => {
   const insets = useSafeAreaInsets();
+  const isTabletDevice = isTablet();
   
   // If gradient header is enabled, render a LinearGradient at the top
   if (gradientHeader) {
@@ -36,10 +38,12 @@ export const PlatformSafeAreaView: React.FC<PlatformSafeAreaViewProps> = ({
         {/* Main content */}
         {Platform.OS === 'ios' ? (
           <SafeAreaView style={styles.contentContainer} edges={edges.filter(edge => edge !== 'top')}>
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             {children}
           </SafeAreaView>
         ) : (
           <View style={styles.contentContainer}>
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
             {children}
           </View>
         )}
