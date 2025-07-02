@@ -148,10 +148,8 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
     if (currentStatus.toLowerCase() === 'processing' && selectedStatus.toLowerCase() === 'picked') {
       // In a real app, we would check if all items have been marked as picked
       // For now, we'll just show an error message
-      if (selectedStatus.toLowerCase() === 'picked') {
-        setError('To mark as Picked, you must first check each item as picked from the order details screen.');
-        return;
-      }
+      setError('To mark as Picked, you must first check each item as picked from the order details screen.');
+      return;
     }
     
     setError(null);

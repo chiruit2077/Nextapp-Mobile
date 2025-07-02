@@ -360,6 +360,22 @@ export default function OrderDetailsScreen() {
     }
   };
 
+  const handleItemPick = (itemId: number, picked: boolean) => {
+    if (!order || !order.items) return;
+    
+    // Update the picked status for the specific item
+    const updatedItems = order.items.map(item => 
+      item.id === itemId ? { ...item, picked } : item
+    );
+    
+    // Update the order with the new items array
+    setOrder(prev => prev ? { ...prev, items: updatedItems } : null);
+  };
+
+  const areAllItemsPicked = () => {
+    return order?.items?.every(item => item.picked) || false;
+  };
+
   const handleCancelOrder = () => {
     Alert.alert(
       'Cancel Order',
@@ -407,22 +423,6 @@ export default function OrderDetailsScreen() {
 
   const calculateOrderSubtotal = () => {
     return order?.items?.reduce((sum, item) => sum + calculateItemTotal(item), 0) || order?.totalAmount || 0;
-  };
-
-  const handleItemPick = (itemId: number, picked: boolean) => {
-    if (!order || !order.items) return;
-    
-    // Update the picked status for the specific item
-    const updatedItems = order.items.map(item => 
-      item.id === itemId ? { ...item, picked } : item
-    );
-    
-    // Update the order with the new items array
-    setOrder(prev => prev ? { ...prev, items: updatedItems } : null);
-  };
-
-  const areAllItemsPicked = () => {
-    return order?.items?.every(item => item.picked) || false;
   };
 
   if (isLoading) {
@@ -777,13 +777,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingBottom: 140, // Fixed: Increased from 40 to 140 to account for tab bar height
+    paddingBottom: 40,
   },
   statusCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    marginHorizontal: 20,
-    marginVertical: 8,
+    margin: 20,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
