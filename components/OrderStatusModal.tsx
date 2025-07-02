@@ -123,6 +123,7 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
 }) => {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
   const isTabletDevice = isTablet();
 
   // Reset state when modal opens
@@ -130,6 +131,7 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
     if (visible) {
       setSelectedStatus('');
       setNotes('');
+      setError(null);
     }
   }, [visible]);
 
@@ -141,6 +143,18 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
 
   const handleSubmit = async () => {
     if (!selectedStatus) return;
+    
+    // Special validation for Processing to Picked transition
+    if (currentStatus.toLowerCase() === 'processing' && selectedStatus.toLowerCase() === 'picked') {
+      // In a real app, we would check if all items have been marked as picked
+      // For now, we'll just show an error message
+      if (selectedStatus.toLowerCase() === 'picked') {
+        setError('To mark as Picked, you must first check each item as picked from the order details screen.');
+        return;
+      }
+    }
+    
+    setError(null);
     await onUpdateStatus(selectedStatus, notes);
   };
 
@@ -218,6 +232,13 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
             Select New Status
           </Text>
           
+          {error && (
+            <View style={styles.errorContainer}>
+              <AlertCircle size={16} color="#ef4444" />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+          
           <ScrollView 
             style={styles.statusOptionsScroll}
             contentContainerStyle={styles.statusOptions}
@@ -238,7 +259,15 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
                       ],
                       isTabletDevice && styles.tabletStatusOption
                     ]}
-                    onPress={() => setSelectedStatus(status)}
+                    onPress={() => {
+                      setSelectedStatus(status);
+                      setError(null);
+                      
+                      // Show warning for Processing to Picked transition
+                      if (currentStatus.toLowerCase() === 'processing' && status.toLowerCase() === 'picked') {
+                        setError('Note: To mark as Picked, all items should be checked as picked from the order details screen.');
+                      }
+                    }}
                   >
                     <View style={styles.statusOptionHeader}>
                       <View style={styles.statusIconContainer}>
@@ -464,6 +493,22 @@ const styles = StyleSheet.create({
   tabletSectionTitle: {
     fontSize: 18,
     marginBottom: 20,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#ef4444',
+    marginLeft: 8,
+    flex: 1,
   },
   statusOptionsScroll: {
     maxHeight: 300,
