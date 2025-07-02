@@ -10,7 +10,6 @@ import {
   Alert,
   TextInput,
   Platform,
-  StatusBar,
 } from 'react-native';
 import { router } from 'expo-router';
 import { apiService } from '@/services/api';
