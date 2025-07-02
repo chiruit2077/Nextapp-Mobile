@@ -65,6 +65,7 @@ The order picking workflow is a critical part of the order fulfillment process. 
 
 #### Item Picking Interface
 - Each order item has a checkbox to mark it as picked
+- Quantity picker allows for partial picking (when stock is limited)
 - Rack location is displayed for easy warehouse navigation
 - "Mark All as Picked" button for quick processing
 - "Update to Picked" button (disabled until all items are picked)
@@ -73,6 +74,7 @@ The order picking workflow is a critical part of the order fulfillment process. 
 - All items must be picked before changing order status to "Picked"
 - Error message displayed if attempting to update status with unpicked items
 - Visual indicators show picking progress
+- Partial picking is supported but requires all items to be at least partially picked
 
 #### Data Structure
 ```typescript
@@ -84,6 +86,7 @@ interface OrderItem {
   unitPrice: number;
   totalPrice: number;
   picked?: boolean;  // Indicates if item has been picked
+  pickedQuantity?: number; // How many units have been picked
   rackLocation?: string;  // Location in warehouse
   part?: {
     name: string;
@@ -163,7 +166,49 @@ This modal handles status updates with validation:
   currentStatus={order.status}
   onUpdateStatus={handleUpdateStatus}
   isLoading={isUpdatingStatus}
+  initialSelectedStatus={selectedNewStatus}
 />
+```
+
+## Partial Picking Support
+
+The system now supports partial picking for scenarios where the ordered quantity is not fully available:
+
+1. **Quantity Picker**: Each item has a quantity picker to specify how many units are picked
+2. **Partial Status**: Visual indicators show when an item is partially picked
+3. **Validation**: All items must be fully picked to change status to "Picked"
+4. **Feedback**: Clear feedback on picking progress
+
+### Partial Picking UI
+```jsx
+<View style={styles.quantityPicker}>
+  <TouchableOpacity
+    style={styles.quantityButton}
+    onPress={() => handleQuantityChange(item, (item.pickedQuantity || 0) - 1)}
+    disabled={disabled || !(item.pickedQuantity && item.pickedQuantity > 0)}
+  >
+    <Minus size={16} color="#64748b" />
+  </TouchableOpacity>
+  
+  <TextInput
+    style={styles.quantityInput}
+    value={String(item.pickedQuantity || 0)}
+    onChangeText={(text) => {
+      const newQty = parseInt(text) || 0;
+      handleQuantityChange(item, newQty);
+    }}
+    keyboardType="numeric"
+    editable={!disabled}
+  />
+  
+  <TouchableOpacity
+    style={styles.quantityButton}
+    onPress={() => handleQuantityChange(item, (item.pickedQuantity || 0) + 1)}
+    disabled={disabled || (item.pickedQuantity === item.quantity)}
+  >
+    <Plus size={16} color="#64748b" />
+  </TouchableOpacity>
+</View>
 ```
 
 ## Best Practices
@@ -181,6 +226,7 @@ This modal handles status updates with validation:
 3. **Location Information**: Display rack locations for efficient picking
 4. **Validation**: Prevent status update until all items are picked
 5. **Error Handling**: Clear error messages for invalid operations
+6. **Quantity Management**: Support for partial picking with quantity controls
 
 ## Future Enhancements
 
@@ -191,7 +237,7 @@ Implement barcode scanning for faster item picking:
 - Support batch scanning for multiple quantities
 
 ### Partial Fulfillment
-Support partial order fulfillment:
+Enhance partial order fulfillment:
 - Allow updating order status with some items marked as backordered
 - Track partially fulfilled orders separately
 - Generate backorder documentation automatically
@@ -210,4 +256,4 @@ Implement smarter picking algorithms:
 
 ## Conclusion
 
-The order status management system provides a robust framework for tracking the complete lifecycle of orders. The picking workflow enhances warehouse efficiency by ensuring all items are properly picked before an order moves to the next stage. This system supports the business requirements while providing flexibility for future enhancements.
+The enhanced order status management system provides a robust framework for tracking the complete lifecycle of orders. The picking workflow now supports partial picking and quantity management, enhancing warehouse efficiency by ensuring all items are properly picked before an order moves to the next stage. This system supports the business requirements while providing flexibility for future enhancements.

@@ -67,6 +67,7 @@ interface OrderItem {
   additionalDiscount?: number;
   urgent?: boolean;
   picked?: boolean;
+  pickedQuantity?: number;
   rackLocation?: string;
   part?: {
     name: string;
@@ -141,6 +142,7 @@ export default function OrderDetailsScreen() {
             additionalDiscount: 0,
             urgent: false,
             picked: false,
+            pickedQuantity: 0,
             rackLocation: 'A-12-B',
             part: {
               name: 'Brake Pads - Front Set',
@@ -160,6 +162,7 @@ export default function OrderDetailsScreen() {
             additionalDiscount: 1,
             urgent: true,
             picked: false,
+            pickedQuantity: 0,
             rackLocation: 'C-05-D',
             part: {
               name: 'Engine Oil 5W-30',
@@ -316,7 +319,7 @@ export default function OrderDetailsScreen() {
         newStatus.toLowerCase() === 'picked') {
       
       // Check if all items are picked
-      const allItemsPicked = order.items?.every(item => item.picked);
+      const allItemsPicked = order.items?.every(item => item.picked && item.pickedQuantity === item.quantity);
       
       if (!allItemsPicked) {
         showToast('All items must be picked before changing status to Picked', 'error');
@@ -361,20 +364,45 @@ export default function OrderDetailsScreen() {
     }
   };
 
-  const handleItemPick = (itemId: number, picked: boolean) => {
+  const handleItemPick = (itemId: number, picked: boolean, pickedQuantity?: number) => {
     if (!order || !order.items) return;
     
     // Update the picked status for the specific item
-    const updatedItems = order.items.map(item => 
-      item.id === itemId ? { ...item, picked } : item
-    );
+    const updatedItems = order.items.map(item => {
+      if (item.id === itemId) {
+        return { 
+          ...item, 
+          picked, 
+          pickedQuantity: pickedQuantity !== undefined ? pickedQuantity : (picked ? item.quantity : 0)
+        };
+      }
+      return item;
+    });
     
     // Update the order with the new items array
     setOrder(prev => prev ? { ...prev, items: updatedItems } : null);
   };
 
   const areAllItemsPicked = () => {
-    return order?.items?.every(item => item.picked) || false;
+    if (!order?.items || order.items.length === 0) return false;
+    
+    return order.items.every(item => 
+      item.picked && 
+      item.pickedQuantity !== undefined && 
+      item.pickedQuantity === item.quantity
+    );
+  };
+
+  const getPickingProgress = () => {
+    if (!order?.items || order.items.length === 0) return { picked: 0, total: 0 };
+    
+    const picked = order.items.filter(item => 
+      item.picked && 
+      item.pickedQuantity !== undefined && 
+      item.pickedQuantity === item.quantity
+    ).length;
+    
+    return { picked, total: order.items.length };
   };
 
   const handleCancelOrder = () => {
@@ -612,7 +640,11 @@ export default function OrderDetailsScreen() {
                 title="Mark All as Picked"
                 onPress={() => {
                   if (!order.items) return;
-                  const updatedItems = order.items.map(item => ({ ...item, picked: true }));
+                  const updatedItems = order.items.map(item => ({ 
+                    ...item, 
+                    picked: true,
+                    pickedQuantity: item.quantity
+                  }));
                   setOrder(prev => prev ? { ...prev, items: updatedItems } : null);
                 }}
                 variant="outline"
@@ -685,6 +717,28 @@ export default function OrderDetailsScreen() {
                     <Text style={styles.discountText}>
                       Discounts: {item.basicDiscount || 0}% + {item.schemeDiscount || 0}% + {item.additionalDiscount || 0}%
                     </Text>
+                  </View>
+                )}
+                
+                {/* Picked Status */}
+                {currentStatus === 'processing' && (
+                  <View style={[
+                    styles.pickedStatusBadge,
+                    item.picked ? styles.pickedStatusBadgeSuccess : styles.pickedStatusBadgePending
+                  ]}>
+                    {item.picked ? (
+                      <>
+                        <CheckCircle size={12} color="#10b981" />
+                        <Text style={styles.pickedStatusTextSuccess}>
+                          Picked: {item.pickedQuantity}/{item.quantity}
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <Clock size={12} color="#f59e0b" />
+                        <Text style={styles.pickedStatusTextPending}>Not Picked</Text>
+                      </>
+                    )}
                   </View>
                 )}
               </View>
@@ -1067,11 +1121,39 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: 'flex-start',
+    marginBottom: 4,
   },
   discountText: {
     fontSize: 10,
     color: '#d97706',
     fontWeight: '600',
+  },
+  pickedStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  pickedStatusBadgeSuccess: {
+    backgroundColor: '#dcfce7',
+  },
+  pickedStatusBadgePending: {
+    backgroundColor: '#fef3c7',
+  },
+  pickedStatusTextSuccess: {
+    fontSize: 10,
+    color: '#10b981',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  pickedStatusTextPending: {
+    fontSize: 10,
+    color: '#f59e0b',
+    fontWeight: '600',
+    marginLeft: 4,
   },
   itemPricing: {
     alignItems: 'flex-end',

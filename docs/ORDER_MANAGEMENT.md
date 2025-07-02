@@ -10,11 +10,12 @@
 5. [Order Listing & Management](#order-listing--management)
 6. [Order Creation Flow](#order-creation-flow)
 7. [Order Details & Status Updates](#order-details--status-updates)
-8. [API Integration](#api-integration)
-9. [UI/UX Features](#uiux-features)
-10. [Navigation Architecture](#navigation-architecture)
-11. [Error Handling](#error-handling)
-12. [Performance Optimizations](#performance-optimizations)
+8. [Order Picking Workflow](#order-picking-workflow)
+9. [API Integration](#api-integration)
+10. [UI/UX Features](#uiux-features)
+11. [Navigation Architecture](#navigation-architecture)
+12. [Error Handling](#error-handling)
+13. [Performance Optimizations](#performance-optimizations)
 
 ---
 
@@ -29,6 +30,7 @@ The Order Management System is a comprehensive solution for handling the complet
 - **Mobile-first Design**: Optimized for field operations
 - **Offline Support**: Core functionality available without internet
 - **Status Management**: Comprehensive order lifecycle tracking
+- **Order Picking**: Detailed item-level picking with quantity management
 
 ---
 
@@ -127,6 +129,30 @@ interface Order {
 }
 ```
 
+### Order Item Interface
+```typescript
+interface OrderItem {
+  id: number;
+  partNumber: string;
+  partName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  basicDiscount?: number;
+  schemeDiscount?: number;
+  additionalDiscount?: number;
+  urgent?: boolean;
+  picked?: boolean;
+  pickedQuantity?: number;
+  rackLocation?: string;
+  part?: {
+    name: string;
+    category: string;
+    image?: string;
+  };
+}
+```
+
 ---
 
 ## Order Lifecycle
@@ -173,6 +199,7 @@ Cancelled ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ←
 | **Edit Orders** | ✅ | ✅ | ✅ | ❌ | ✅ Limited | ❌ |
 | **Update Status** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Cancel Orders** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Pick Items** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **View Reports** | ✅ | ✅ | ✅ | ✅ Limited | ✅ Limited | ❌ |
 | **Download Invoice** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
@@ -189,6 +216,7 @@ Cancelled ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ←
 - Inventory integration
 - Status updates for warehouse operations
 - Pick/pack management
+- Quantity management for partial picking
 
 #### **Salesman**
 - Customer-focused interface
@@ -347,17 +375,33 @@ Seamless integration with parts catalog:
 
 #### **Status Update System**
 ```typescript
-const handleUpdateStatus = async () => {
-  if (!order || !newStatus) return;
+const handleUpdateStatus = async (newStatus: string, notes: string) => {
+  if (!order) return;
+  
+  // Special validation for Processing to Picked transition
+  if ((order.status || order.Order_Status || '').toLowerCase() === 'processing' && 
+      newStatus.toLowerCase() === 'picked') {
+    
+    // Check if all items are picked
+    const allItemsPicked = order.items?.every(item => 
+      item.picked && item.pickedQuantity === item.quantity
+    );
+    
+    if (!allItemsPicked) {
+      showToast('All items must be picked before changing status to Picked', 'error');
+      return;
+    }
+  }
 
   setIsUpdatingStatus(true);
   try {
     const orderId = order.id || order.Order_Id;
-    await apiService.updateOrderStatus(orderId, newStatus, statusNotes);
+    await apiService.updateOrderStatus(orderId, newStatus, notes);
     
     // Update local state
     setOrder(prev => prev ? { 
       ...prev, 
+      status: newStatus,
       Order_Status: newStatus,
       statusHistory: [
         ...(prev.statusHistory || []),
@@ -365,14 +409,16 @@ const handleUpdateStatus = async () => {
           status: newStatus,
           timestamp: new Date().toISOString(),
           updatedBy: user?.name || 'User',
-          notes: statusNotes || `Status updated to ${newStatus}`,
+          notes: notes || `Status updated to ${newStatus}`,
         }
       ]
     } : null);
     
+    setShowStatusModal(false);
+    setStatusNotes('');
     showToast('Order status updated successfully', 'success');
     
-    // Navigate back to refresh list
+    // Redirect back to orders list after a short delay to show the success message
     setTimeout(() => {
       router.replace('/(tabs)/orders');
     }, 1500);
@@ -390,6 +436,7 @@ const handleUpdateStatus = async () => {
 - **Notes Field**: Optional notes for status change
 - **Validation**: Ensures valid status transitions
 - **Confirmation**: Clear feedback on successful updates
+- **Pre-selection**: Automatically selects "Picked" when all items are picked
 
 #### **Order Timeline**
 Visual representation of order progress:
@@ -418,6 +465,69 @@ Context-sensitive actions based on user role and order status:
 - **Cancel Order**: Admin/Manager only
 - **Download Invoice**: All roles
 - **Print Labels**: Warehouse operations
+
+---
+
+## Order Picking Workflow
+
+### Overview
+The order picking workflow is a critical part of the order fulfillment process. It allows warehouse staff (Storeman) to mark individual items as picked from inventory before updating the overall order status to "Picked".
+
+### Process Flow
+1. Order is in "Processing" status
+2. Storeman views order details
+3. Storeman marks individual items as picked with specific quantities
+4. Once all items are picked, the order status can be updated to "Picked"
+5. Order moves to the next stage (typically "Dispatched")
+
+### Implementation Details
+
+#### Item Picking Interface
+- Each order item has a checkbox to mark it as picked
+- Quantity picker allows specifying how many units are picked
+- Rack location is displayed for easy warehouse navigation
+- "Mark All as Picked" button for quick processing
+- "Update to Picked" button (disabled until all items are picked)
+
+#### Validation Rules
+- All items must be fully picked before changing order status to "Picked"
+- Error message displayed if attempting to update status with unpicked items
+- Visual indicators show picking progress
+- Partial picking is supported but requires full picking to complete the order
+
+#### Quantity Management
+```typescript
+const handleQuantityChange = (item: OrderItem, newQuantity: number) => {
+  // Ensure quantity is within valid range
+  const validQuantity = Math.max(0, Math.min(newQuantity, item.quantity));
+  
+  // Update picked status based on quantity
+  const isPicked = validQuantity > 0;
+  
+  // Call the parent handler
+  onItemPick(item.id, isPicked, validQuantity);
+};
+```
+
+#### Picking Status Indicators
+```jsx
+{item.picked && item.pickedQuantity === item.quantity ? (
+  <View style={styles.fullyPickedBadge}>
+    <CheckCircle size={14} color="#10b981" />
+    <Text style={styles.fullyPickedText}>Complete</Text>
+  </View>
+) : item.picked && item.pickedQuantity !== undefined && item.pickedQuantity < item.quantity ? (
+  <View style={styles.partiallyPickedBadge}>
+    <AlertCircle size={14} color="#f59e0b" />
+    <Text style={styles.partiallyPickedText}>Partial</Text>
+  </View>
+) : (
+  <View style={styles.notPickedBadge}>
+    <Circle size={14} color="#64748b" />
+    <Text style={styles.notPickedText}>Not Picked</Text>
+  </View>
+)}
+```
 
 ---
 
@@ -843,180 +953,45 @@ const cachedApiCall = async (endpoint: string, params: any) => {
 
 ---
 
-## Testing Strategy
-
-### Unit Testing
-
-#### **Component Tests**
-```typescript
-describe('OrderCard', () => {
-  it('displays order information correctly', () => {
-    const mockOrder = {
-      Order_Id: 1,
-      CRMOrderId: 'CRM-2025-001',
-      Order_Status: 'New',
-      Retailer_Name: 'Test Retailer',
-    };
-    
-    render(<OrderCard order={mockOrder} />);
-    
-    expect(screen.getByText('CRM-2025-001')).toBeInTheDocument();
-    expect(screen.getByText('Test Retailer')).toBeInTheDocument();
-    expect(screen.getByText('New')).toBeInTheDocument();
-  });
-});
-```
-
-#### **API Integration Tests**
-```typescript
-describe('Order API', () => {
-  it('creates order successfully', async () => {
-    const orderData = {
-      retailer_id: 1,
-      items: [{ part_number: 'BP-001', quantity: 2 }],
-    };
-    
-    const result = await apiService.createOrder(orderData);
-    
-    expect(result).toHaveProperty('Order_Id');
-    expect(result.Order_Status).toBe('New');
-  });
-});
-```
-
-### Integration Testing
-
-#### **User Flow Tests**
-```typescript
-describe('Order Creation Flow', () => {
-  it('completes full order creation process', async () => {
-    // Navigate to create order
-    fireEvent.press(screen.getByText('Create Order'));
-    
-    // Select retailer
-    fireEvent.press(screen.getByText('Test Retailer'));
-    
-    // Add items
-    fireEvent.press(screen.getByText('Add Item'));
-    
-    // Submit order
-    fireEvent.press(screen.getByText('Place Order'));
-    
-    // Verify success
-    await waitFor(() => {
-      expect(screen.getByText('Order created successfully')).toBeInTheDocument();
-    });
-  });
-});
-```
-
-### Performance Testing
-
-#### **Load Testing**
-- **Large Order Lists**: Test with 1000+ orders
-- **Concurrent Updates**: Multiple status updates
-- **Memory Usage**: Monitor memory consumption
-- **Network Conditions**: Test on slow connections
-
----
-
-## Security Considerations
-
-### Data Protection
-
-#### **Sensitive Information**
-- **Customer Data**: Encrypted transmission and storage
-- **Order Details**: Role-based access control
-- **Financial Information**: PCI compliance considerations
-- **User Authentication**: JWT token management
-
-#### **API Security**
-```typescript
-// Request interceptor for authentication
-api.interceptors.request.use(async (config) => {
-  const token = await getSecureItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  
-  // Add request signing for critical operations
-  if (config.method === 'patch' && config.url?.includes('/status')) {
-    config.headers['X-Request-Signature'] = signRequest(config.data);
-  }
-  
-  return config;
-});
-```
-
-### Input Validation
-
-#### **Client-Side Validation**
-```typescript
-const validateOrderData = (orderData: OrderData): ValidationResult => {
-  const errors: string[] = [];
-  
-  if (!orderData.retailer_id) {
-    errors.push('Retailer selection is required');
-  }
-  
-  if (!orderData.items || orderData.items.length === 0) {
-    errors.push('At least one item is required');
-  }
-  
-  orderData.items?.forEach((item, index) => {
-    if (!item.part_number) {
-      errors.push(`Item ${index + 1}: Part number is required`);
-    }
-    if (item.quantity <= 0) {
-      errors.push(`Item ${index + 1}: Quantity must be positive`);
-    }
-  });
-  
-  return { isValid: errors.length === 0, errors };
-};
-```
-
-#### **Server-Side Validation**
-- **Input Sanitization**: Prevent injection attacks
-- **Business Rules**: Enforce order constraints
-- **Rate Limiting**: Prevent abuse
-- **Audit Logging**: Track all order modifications
-
----
-
 ## Future Enhancements
 
-### Planned Features
+### Barcode Scanning
+Implement barcode scanning for faster item picking:
+- Scan item barcode to automatically mark as picked
+- Validate scanned item against order items
+- Support batch scanning for multiple quantities
 
-#### **Advanced Analytics**
-- **Order Trends**: Historical analysis and forecasting
-- **Performance Metrics**: KPIs and dashboards
-- **Customer Insights**: Ordering patterns and preferences
-- **Inventory Impact**: Order effects on stock levels
+### Advanced Inventory Integration
+- **Real-time Stock Updates**: Show actual stock levels during picking
+- **Stock Reservation**: Reserve stock when order is in Processing status
+- **Automatic Reordering**: Trigger reorder when stock falls below threshold
+- **Batch Picking**: Pick multiple orders simultaneously for efficiency
 
-#### **Automation**
-- **Smart Routing**: Automatic order assignment
-- **Status Automation**: Rule-based status updates
-- **Notification System**: Real-time alerts and updates
-- **Integration APIs**: Third-party system connections
+### Enhanced Mobile Experience
+- **Offline Mode**: Complete offline functionality with sync
+- **Push Notifications**: Real-time order status updates
+- **Voice Commands**: Hands-free operation for warehouse staff
+- **Augmented Reality**: Visual guidance for item locations
 
-#### **Mobile Enhancements**
-- **Offline Mode**: Complete offline functionality
-- **Push Notifications**: Real-time order updates
-- **Barcode Scanning**: Quick part identification
-- **Voice Commands**: Hands-free operation
+### Reporting and Analytics
+- **Picking Efficiency**: Track time spent on picking operations
+- **Error Tracking**: Monitor picking errors and discrepancies
+- **Performance Metrics**: Compare staff performance
+- **Optimization Suggestions**: AI-powered recommendations for process improvement
 
-#### **AI Integration**
-- **Predictive Analytics**: Demand forecasting
-- **Smart Recommendations**: Suggested orders
-- **Anomaly Detection**: Unusual order patterns
-- **Natural Language**: Voice-to-order conversion
+### Customer Communication
+- **Automated Updates**: Send status notifications to retailers
+- **Delivery Tracking**: Real-time tracking of dispatched orders
+- **Feedback System**: Collect customer satisfaction data
+- **Self-Service Portal**: Allow retailers to track their orders
 
 ---
 
 ## Conclusion
 
 The Order Management System in NextApp Auto Parts CRM provides a comprehensive, role-based solution for managing the complete order lifecycle. With its mobile-first design, real-time updates, and robust error handling, it enables efficient field operations while maintaining data integrity and security.
+
+The enhanced order picking workflow with quantity management provides warehouse staff with the tools they need to efficiently process orders, even when dealing with partial stock availability. The system's validation ensures that orders only progress to the next stage when all requirements are met.
 
 The system's modular architecture allows for easy maintenance and future enhancements, while its responsive design ensures optimal performance across all devices and platforms.
 
