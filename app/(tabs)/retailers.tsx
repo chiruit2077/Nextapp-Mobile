@@ -10,7 +10,6 @@ import {
   Alert,
   TextInput,
   TouchableOpacity,
-  StatusBar,
   Platform,
 } from 'react-native';
 import { ModernButton } from '@/components/ModernButtonUnified';
@@ -19,6 +18,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { ErrorMessage } from '@/components/ErrorMessage';
 import { FilterModal } from '@/components/FilterModal';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
+import { ModernHeader } from '@/components/ModernHeader';
 import { useAuth } from '@/context/AuthContext';
 import {
   Users,
@@ -470,41 +470,20 @@ export default function RetailersScreen() {
   }
 
   return (
-    <PlatformSafeAreaView style={styles.container}>
+    <PlatformSafeAreaView style={styles.container} gradientHeader>
       {/* Header */}
-      <View style={styles.header}>
-        <StatusBar barStyle="light-content" backgroundColor="#667eea" translucent={true} />
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={[styles.headerGradient, isTabletDevice && styles.tabletHeaderGradient]}
-        >
-          <View style={styles.headerContent}>
-            <HamburgerMenu />
-            
-            <View style={styles.headerLeft}>
-              <Text style={[styles.headerTitle, isTabletDevice && styles.tabletHeaderTitle]}>
-                Retailers
-              </Text>
-              <Text style={[styles.headerSubtitle, isTabletDevice && styles.tabletHeaderSubtitle]}>
-                {filteredRetailers.length} retailer{filteredRetailers.length !== 1 ? 's' : ''}
-              </Text>
-            </View>
-            
-            <View style={styles.headerActions}>
-              {canManageRetailers && (
-                <ModernButton
-                  title="Add Retailer"
-                  onPress={() => Alert.alert('Add Retailer', 'Feature coming soon!')}
-                  icon={<Plus size={isTabletDevice ? 20 : 16} color="#fff" />}
-                  variant="primary"
-                  size={isTabletDevice ? "medium" : "small"}
-                  style={styles.addButton}
-                />
-              )}
-            </View>
-          </View>
-        </LinearGradient>
-      </View>
+      <ModernHeader
+        title="Retailers"
+        subtitle={`${filteredRetailers.length} retailer${filteredRetailers.length !== 1 ? 's' : ''}`}
+        leftButton={<HamburgerMenu />}
+        rightButton={
+          canManageRetailers ? {
+            icon: <Plus size={isTabletDevice ? 24 : 20} color="#FFFFFF" />,
+            onPress: () => Alert.alert('Add Retailer', 'Feature coming soon!')
+          } : undefined
+        }
+        variant="gradient"
+      />
 
       {/* Stats */}
       {renderStats()}

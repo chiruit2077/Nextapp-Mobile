@@ -1,38 +1,55 @@
 import React from 'react';
 import { View, StyleSheet, StatusBar, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface PlatformSafeAreaViewProps {
   children: React.ReactNode;
   style?: any;
-  gradient?: boolean;
+  gradientHeader?: boolean;
   gradientColors?: string[];
 }
 
 export const PlatformSafeAreaView: React.FC<PlatformSafeAreaViewProps> = ({
   children,
   style,
-  gradient = false,
+  gradientHeader = false,
   gradientColors = ['#667eea', '#764ba2'],
 }) => {
+  const insets = useSafeAreaInsets();
+  
+  // Apply gradient to status bar area if gradientHeader is true
+  if (gradientHeader) {
+    return (
+      <View style={[styles.container, style]}>
+        <StatusBar 
+          barStyle="light-content" 
+          backgroundColor="transparent" 
+          translucent={true} 
+        />
+        
+        {/* Gradient for status bar area */}
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: Platform.OS === 'ios' ? insets.top : StatusBar.currentHeight || 0,
+            zIndex: 1000,
+          }}
+        />
+        
+        {children}
+      </View>
+    );
+  }
+
+  // Standard safe area view without gradient
   if (Platform.OS === 'web') {
-    if (gradient) {
-      return (
-        <>
-          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-          <LinearGradient
-            colors={gradientColors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.container, style]}
-          >
-            {children}
-          </LinearGradient>
-        </>
-      );
-    }
-    
     return (
       <View style={[styles.container, style]}>
         {children}
@@ -40,26 +57,8 @@ export const PlatformSafeAreaView: React.FC<PlatformSafeAreaViewProps> = ({
     );
   }
 
-  if (gradient) {
-    return (
-      <>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        <LinearGradient
-          colors={gradientColors}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.container, style]}
-        >
-          <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'left']}>
-            {children}
-          </SafeAreaView>
-        </LinearGradient>
-      </>
-    );
-  }
-
   return (
-    <SafeAreaView style={[styles.container, style]} edges={['top', 'right', 'left']}>
+    <SafeAreaView style={[styles.container, style]} edges={['right', 'left']}>
       {children}
     </SafeAreaView>
   );
@@ -67,9 +66,6 @@ export const PlatformSafeAreaView: React.FC<PlatformSafeAreaViewProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  safeArea: {
     flex: 1,
   },
 });

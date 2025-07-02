@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { ModernButton } from '@/components/ModernButtonUnified';
+import { ModernHeader } from '@/components/ModernHeader';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -128,29 +129,17 @@ export default function ProfileScreen() {
   return (
     <PlatformSafeAreaView style={styles.container} gradientHeader>
       {/* Header */}
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={[styles.header, isTabletDevice && styles.tabletHeader]}
-      >
-        <View style={styles.headerContent}>
-          <HamburgerMenu />
-          
-          <View style={styles.headerTitle}>
-            <Text style={[styles.headerTitleText, isTabletDevice && styles.tabletHeaderTitleText]}>
-              Profile
-            </Text>
-          </View>
-          
-          <ModernButton
-            title={isEditing ? 'Cancel' : 'Edit'}
-            onPress={() => setIsEditing(!isEditing)}
-            variant="outline"
-            size="small"
-            icon={isEditing ? <X size={isTabletDevice ? 24 : 20} color="#667eea" /> : <Edit3 size={isTabletDevice ? 24 : 20} color="#667eea" />}
-            style={styles.editButton}
-          />
-        </View>
-      </LinearGradient>
+      <ModernHeader
+        title="Profile"
+        leftButton={<HamburgerMenu />}
+        rightButton={{
+          icon: isEditing ? 
+            <X size={isTabletDevice ? 24 : 20} color="#FFFFFF" /> : 
+            <Edit3 size={isTabletDevice ? 24 : 20} color="#FFFFFF" />,
+          onPress: () => setIsEditing(!isEditing)
+        }}
+        variant="gradient"
+      />
 
       <ScrollView 
         style={styles.scrollView} 
@@ -521,39 +510,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
-  },
-  header: {
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-  },
-  tabletHeader: {
-    paddingVertical: 24,
-    paddingHorizontal: 32,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerTitle: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitleText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  tabletHeaderTitleText: {
-    fontSize: 28,
-  },
-  editButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,

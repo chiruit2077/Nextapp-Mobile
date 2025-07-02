@@ -13,6 +13,7 @@ import { apiService } from '@/services/api';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { ErrorMessage } from '@/components/ErrorMessage';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
+import { ModernHeader } from '@/components/ModernHeader';
 import { useAuth } from '@/context/AuthContext';
 import { ChartBar as BarChart3, TrendingUp, Package, ShoppingCart, Users, Download, Calendar, DollarSign, ArrowUpRight, ArrowDownRight, Target, Award, Clock, Zap, Eye, Filter } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -764,36 +765,19 @@ export default function ReportsScreen() {
   const tabs = getReportTabs();
 
   return (
-    <PlatformSafeAreaView style={styles.container}>
+    <PlatformSafeAreaView style={styles.container} gradientHeader>
       {/* Header */}
-      <View style={styles.header}>
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={[styles.headerGradient, isTabletDevice && styles.tabletHeaderGradient]}
-        >
-          <View style={styles.headerContent}>
-            <HamburgerMenu />
-            
-            <View style={styles.headerLeft}>
-              <Text style={[styles.headerTitle, isTabletDevice && styles.tabletHeaderTitle]}>
-                Reports & Analytics
-              </Text>
-              <Text style={[styles.headerSubtitle, isTabletDevice && styles.tabletHeaderSubtitle]}>
-                Business insights and performance metrics
-              </Text>
-            </View>
-            
-            <ModernButton
-              title="Export"
-              icon={<Download size={isTabletDevice ? 20 : 16} color="#fff" />}
-              variant="primary"
-              size="small"
-              onPress={handleExport}
-              style={{ marginLeft: 8 }}
-            />
-          </View>
-        </LinearGradient>
-      </View>
+      <ModernHeader
+        title="Reports & Analytics"
+        subtitle="Business insights and performance metrics"
+        leftButton={<HamburgerMenu />}
+        rightButton={{
+          icon: <Download size={isTabletDevice ? 20 : 16} color="#FFFFFF" />,
+          title: "Export",
+          onPress: handleExport
+        }}
+        variant="gradient"
+      />
 
       {/* Report Tabs */}
       <View style={[styles.tabContainer, isTabletDevice && styles.tabletTabContainer]}>
@@ -838,45 +822,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-  },
-  header: {
-    paddingTop: 0,
-  },
-  headerGradient: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: Platform.OS === 'ios' ? 10 : 20,
-  },
-  tabletHeaderGradient: {
-    paddingHorizontal: 32,
-    paddingBottom: 28,
-    paddingTop: Platform.OS === 'ios' ? 16 : 28,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerLeft: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  tabletHeaderTitle: {
-    fontSize: 28,
-    marginBottom: 6,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  tabletHeaderSubtitle: {
-    fontSize: 16,
   },
   tabContainer: {
     backgroundColor: '#FFFFFF',

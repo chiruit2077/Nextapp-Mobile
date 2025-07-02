@@ -7,14 +7,13 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
-  StatusBar,
-  Platform,
 } from 'react-native';
 import { apiService } from '@/services/api';
 import { SearchBar } from '@/components/SearchBar';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { ErrorMessage } from '@/components/ErrorMessage';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
+import { ModernHeader } from '@/components/ModernHeader';
 import { useAuth } from '@/context/AuthContext';
 import { Package, TriangleAlert as AlertTriangle, Plus, Minus, CreditCard as Edit3, TrendingUp, TrendingDown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -271,45 +270,19 @@ export default function InventoryScreen() {
   }
 
   return (
-    <PlatformSafeAreaView style={styles.container}>
+    <PlatformSafeAreaView style={styles.container} gradientHeader>
       {/* Header */}
-      <View style={styles.header}>
-        <StatusBar barStyle="light-content" backgroundColor="#667eea" translucent={true} />
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={[styles.headerGradient, isTabletDevice && styles.tabletHeaderGradient]}
-        >
-          <View style={styles.headerContent}>
-            <HamburgerMenu />
-            
-            <View style={styles.headerTitle}>
-              <Text style={[styles.headerTitleText, isTabletDevice && styles.tabletHeaderTitleText]}>
-                Inventory Management
-              </Text>
-              <Text style={[styles.headerSubtitle, isTabletDevice && styles.tabletHeaderSubtitle]}>
-                {filteredInventory.length} item{filteredInventory.length !== 1 ? 's' : ''} in stock
-              </Text>
-            </View>
-            
-            <View style={styles.headerActions}>
-              <View style={[styles.statItem, isTabletDevice && styles.tabletStatItem]}>
-                <TrendingDown size={isTabletDevice ? 20 : 16} color="#DC2626" />
-                <Text style={[styles.statText, isTabletDevice && styles.tabletStatText]}>
-                  {filteredInventory.filter(item => isLowStock(item)).length} Low
-                </Text>
-              </View>
-              <ModernButton
-                title="Add Part"
-                icon={<Plus size={isTabletDevice ? 20 : 16} color="#fff" />}
-                variant="primary"
-                size={isTabletDevice ? "medium" : "small"}
-                onPress={handleAddPart}
-                style={{ marginLeft: 8 }}
-              />
-            </View>
-          </View>
-        </LinearGradient>
-      </View>
+      <ModernHeader
+        title="Inventory Management"
+        subtitle={`${filteredInventory.length} item${filteredInventory.length !== 1 ? 's' : ''} in stock`}
+        leftButton={<HamburgerMenu />}
+        rightButton={{
+          icon: <Plus size={isTabletDevice ? 20 : 16} color="#FFFFFF" />,
+          title: "Add Part",
+          onPress: handleAddPart
+        }}
+        variant="gradient"
+      />
 
       {/* Search */}
       <SearchBar
@@ -354,72 +327,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-  },
-  header: {
-    paddingTop: 0,
-  },
-  headerGradient: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: Platform.OS === 'ios' ? 10 : 20,
-  },
-  tabletHeaderGradient: {
-    paddingHorizontal: 32,
-    paddingBottom: 28,
-    paddingTop: Platform.OS === 'ios' ? 16 : 28,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitleText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  tabletHeaderTitleText: {
-    fontSize: 28,
-    marginBottom: 6,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  tabletHeaderSubtitle: {
-    fontSize: 16,
-  },
-  headerActions: {
-    alignItems: 'flex-end',
-    flexDirection: 'row',
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  tabletStatItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  statText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  tabletStatText: {
-    fontSize: 14,
-    marginLeft: 6,
   },
   listContent: {
     padding: 16,
