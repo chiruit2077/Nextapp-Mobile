@@ -14,6 +14,7 @@ import { apiService } from '@/services/api';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { ErrorMessage } from '@/components/ErrorMessage';
 import { OrderStatusModal } from '@/components/OrderStatusModal';
+import { OrderItemPicker } from '@/components/OrderItemPicker';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Order } from '@/types/api';
@@ -47,6 +48,7 @@ import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { isTablet } from '@/hooks/useResponsiveStyles';
 import { PlatformSafeAreaView } from '@/components/PlatformSafeAreaView';
 import { ModernHeader } from '@/components/ModernHeader';
+import { ModernButton } from '@/components/ModernButton';
 
 interface OrderDetails extends Order {
   items?: OrderItem[];
@@ -64,6 +66,8 @@ interface OrderItem {
   schemeDiscount?: number;
   additionalDiscount?: number;
   urgent?: boolean;
+  picked?: boolean;
+  rackLocation?: string;
   part?: {
     name: string;
     category: string;
@@ -77,6 +81,18 @@ interface StatusHistoryItem {
   updatedBy: string;
   notes?: string;
 }
+
+// Define valid status transitions
+const validTransitions: Record<string, string[]> = {
+  New: ['Pending', 'Hold', 'Cancelled'],
+  Pending: ['Processing', 'Hold', 'Cancelled'],
+  Processing: ['Picked', 'Hold', 'Cancelled'],
+  Hold: ['New', 'Pending', 'Processing', 'Picked', 'Dispatched', 'Completed', 'Cancelled'],
+  Picked: ['Dispatched', 'Hold'],
+  Dispatched: ['Completed'],
+  Completed: [],
+  Cancelled: []
+};
 
 export default function OrderDetailsScreen() {
   const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
@@ -123,6 +139,8 @@ export default function OrderDetailsScreen() {
             schemeDiscount: 2,
             additionalDiscount: 0,
             urgent: false,
+            picked: false,
+            rackLocation: 'A-12-B',
             part: {
               name: 'Brake Pads - Front Set',
               category: 'Brake System',
@@ -140,6 +158,8 @@ export default function OrderDetailsScreen() {
             schemeDiscount: 0,
             additionalDiscount: 1,
             urgent: true,
+            picked: false,
+            rackLocation: 'C-05-D',
             part: {
               name: 'Engine Oil 5W-30',
               category: 'Engine',
@@ -289,6 +309,19 @@ export default function OrderDetailsScreen() {
 
   const handleUpdateStatus = async (newStatus: string, notes: string) => {
     if (!order) return;
+    
+    // Special validation for Processing to Picked transition
+    if ((order.status || order.Order_Status || '').toLowerCase() === 'processing' && 
+        newStatus.toLowerCase() === 'picked') {
+      
+      // Check if all items are picked
+      const allItemsPicked = order.items?.every(item => item.picked);
+      
+      if (!allItemsPicked) {
+        showToast('All items must be picked before changing status to Picked', 'error');
+        return;
+      }
+    }
 
     setIsUpdatingStatus(true);
     try {
@@ -376,6 +409,22 @@ export default function OrderDetailsScreen() {
     return order?.items?.reduce((sum, item) => sum + calculateItemTotal(item), 0) || order?.totalAmount || 0;
   };
 
+  const handleItemPick = (itemId: number, picked: boolean) => {
+    if (!order || !order.items) return;
+    
+    // Update the picked status for the specific item
+    const updatedItems = order.items.map(item => 
+      item.id === itemId ? { ...item, picked } : item
+    );
+    
+    // Update the order with the new items array
+    setOrder(prev => prev ? { ...prev, items: updatedItems } : null);
+  };
+
+  const areAllItemsPicked = () => {
+    return order?.items?.every(item => item.picked) || false;
+  };
+
   if (isLoading) {
     return <LoadingSpinner fullScreen text="Loading order details..." />;
   }
@@ -399,6 +448,8 @@ export default function OrderDetailsScreen() {
   const branchName = order.branch || order.Branch_Name;
   const companyName = order.Company_Name;
   const isUrgent = order.urgent || order.Urgent_Status === 1;
+  const currentStatus = (order.status || order.Order_Status || '').toLowerCase();
+  const showPickingInterface = currentStatus === 'processing' && canUpdateStatus && user?.role === 'storeman';
 
   return (
     <PlatformSafeAreaView style={styles.container} gradientHeader>
@@ -536,6 +587,48 @@ export default function OrderDetailsScreen() {
           </View>
         </Animated.View>
 
+        {/* Item Picking Interface (for Storeman when order is in Processing status) */}
+        {showPickingInterface && order.items && (
+          <Animated.View entering={FadeInUp.delay(500).duration(600)} style={styles.pickingCard}>
+            <Text style={styles.sectionTitle}>Pick Items</Text>
+            <OrderItemPicker 
+              items={order.items} 
+              onItemPick={handleItemPick} 
+            />
+            
+            <View style={styles.pickingActions}>
+              <ModernButton
+                title="Mark All as Picked"
+                onPress={() => {
+                  if (!order.items) return;
+                  const updatedItems = order.items.map(item => ({ ...item, picked: true }));
+                  setOrder(prev => prev ? { ...prev, items: updatedItems } : null);
+                }}
+                variant="outline"
+                size="small"
+                icon={<CheckCircle size={18} color="#10b981" />}
+                style={{ flex: 1 }}
+              />
+              
+              <ModernButton
+                title="Update to Picked"
+                onPress={() => {
+                  if (areAllItemsPicked()) {
+                    setShowStatusModal(true);
+                  } else {
+                    showToast('All items must be picked before changing status', 'warning');
+                  }
+                }}
+                variant="primary"
+                size="small"
+                disabled={!areAllItemsPicked()}
+                icon={<Package size={18} color="#FFFFFF" />}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </Animated.View>
+        )}
+
         {/* Order Items */}
         <Animated.View entering={FadeInUp.delay(600).duration(600)} style={styles.itemsCard}>
           <Text style={styles.sectionTitle}>Order Items</Text>
@@ -564,6 +657,14 @@ export default function OrderDetailsScreen() {
                 <Text style={styles.itemNumber}>#{item.partNumber}</Text>
                 {item.part?.category && (
                   <Text style={styles.itemCategory}>{item.part.category}</Text>
+                )}
+                
+                {/* Rack Location */}
+                {item.rackLocation && (
+                  <View style={styles.rackLocationContainer}>
+                    <MapPin size={12} color="#64748b" />
+                    <Text style={styles.rackLocationText}>Rack: {item.rackLocation}</Text>
+                  </View>
                 )}
                 
                 {/* Discount Information */}
@@ -846,6 +947,27 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginLeft: 8,
   },
+  pickingCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    marginHorizontal: 20,
+    marginVertical: 8,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  pickingActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    gap: 12,
+  },
   itemsCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -916,6 +1038,16 @@ const styles = StyleSheet.create({
     color: '#667eea',
     fontWeight: '600',
     marginBottom: 4,
+  },
+  rackLocationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  rackLocationText: {
+    fontSize: 12,
+    color: '#64748b',
+    marginLeft: 4,
   },
   discountInfo: {
     backgroundColor: '#fef3c7',
