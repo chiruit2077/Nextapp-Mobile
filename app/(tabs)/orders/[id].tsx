@@ -7,13 +7,13 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  Modal,
   TextInput,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { apiService } from '@/services/api';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { ErrorMessage } from '@/components/ErrorMessage';
+import { OrderStatusModal } from '@/components/OrderStatusModal';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Order } from '@/types/api';
@@ -44,6 +44,9 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import { isTablet } from '@/hooks/useResponsiveStyles';
+import { PlatformSafeAreaView } from '@/components/PlatformSafeAreaView';
+import { ModernHeader } from '@/components/ModernHeader';
 
 interface OrderDetails extends Order {
   items?: OrderItem[];
@@ -86,9 +89,9 @@ export default function OrderDetailsScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
-  const [newStatus, setNewStatus] = useState('');
   const [statusNotes, setStatusNotes] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const isTabletDevice = isTablet();
 
   const canEdit = ['admin', 'manager'].includes(user?.role || '');
   const canUpdateStatus = ['admin', 'manager', 'storeman'].includes(user?.role || '');
@@ -284,13 +287,13 @@ export default function OrderDetailsScreen() {
     return cancellableStatuses.includes((order.status || order.Order_Status || 'unknown').toLowerCase());
   };
 
-  const handleUpdateStatus = async () => {
-    if (!order || !newStatus) return;
+  const handleUpdateStatus = async (newStatus: string, notes: string) => {
+    if (!order) return;
 
     setIsUpdatingStatus(true);
     try {
       const orderId = order.id || order.Order_Id;
-      await apiService.updateOrderStatus(orderId, newStatus, statusNotes);
+      await apiService.updateOrderStatus(orderId, newStatus, notes);
       
       // Update local state
       setOrder(prev => prev ? { 
@@ -303,13 +306,12 @@ export default function OrderDetailsScreen() {
             status: newStatus,
             timestamp: new Date().toISOString(),
             updatedBy: user?.name || 'User',
-            notes: statusNotes || `Status updated to ${newStatus}`,
+            notes: notes || `Status updated to ${newStatus}`,
           }
         ]
       } : null);
       
       setShowStatusModal(false);
-      setNewStatus('');
       setStatusNotes('');
       showToast('Order status updated successfully', 'success');
       
@@ -374,97 +376,6 @@ export default function OrderDetailsScreen() {
     return order?.items?.reduce((sum, item) => sum + calculateItemTotal(item), 0) || order?.totalAmount || 0;
   };
 
-  const renderStatusModal = () => {
-    const statuses = [
-      { key: 'New', label: 'New' },
-      { key: 'Pending', label: 'Pending' },
-      { key: 'Processing', label: 'Processing' },
-      { key: 'Completed', label: 'Completed' },
-      { key: 'Hold', label: 'Hold' },
-      { key: 'Picked', label: 'Picked' },
-      { key: 'Dispatched', label: 'Dispatched' },
-      { key: 'Cancelled', label: 'Cancelled' },
-    ];
-
-    return (
-      <Modal
-        visible={showStatusModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowStatusModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.statusModal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Update Order Status</Text>
-              <TouchableOpacity onPress={() => setShowStatusModal(false)}>
-                <X size={24} color="#64748b" />
-              </TouchableOpacity>
-            </View>
-            
-            {statuses.map((status) => (
-              <TouchableOpacity
-                key={status.key}
-                style={[
-                  styles.statusOption,
-                  newStatus === status.key && styles.selectedStatusOption
-                ]}
-                onPress={() => setNewStatus(status.key)}
-              >
-                <Text style={[
-                  styles.statusOptionText,
-                  newStatus === status.key && styles.selectedStatusOptionText
-                ]}>
-                  {status.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-            
-            <View style={styles.notesInput}>
-              <Text style={styles.inputLabel}>Notes (Optional)</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Add notes about this status change..."
-                value={statusNotes}
-                onChangeText={setStatusNotes}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-            
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowStatusModal(false)}
-                disabled={isUpdatingStatus}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.updateButton}
-                onPress={handleUpdateStatus}
-                disabled={!newStatus || isUpdatingStatus}
-              >
-                <LinearGradient
-                  colors={['#667eea', '#764ba2']}
-                  style={styles.updateGradient}
-                >
-                  {isUpdatingStatus ? (
-                    <LoadingSpinner size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.updateButtonText}>Update Status</Text>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
-    );
-  };
-
   if (isLoading) {
     return <LoadingSpinner fullScreen text="Loading order details..." />;
   }
@@ -490,39 +401,21 @@ export default function OrderDetailsScreen() {
   const isUrgent = order.urgent || order.Urgent_Status === 1;
 
   return (
-    <View style={styles.container}>
+    <PlatformSafeAreaView style={styles.container} gradientHeader>
       {/* Header */}
-      <View style={styles.header}>
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.headerGradient}
-        >
-          <View style={styles.headerContent}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={handleBackPress}
-            >
-              <ArrowLeft size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            
-            <View style={styles.headerTitle}>
-              <Text style={styles.headerTitleText}>Order #{orderNumber}</Text>
-              <Text style={styles.headerSubtitle}>
-                {order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? 's' : ''}
-              </Text>
-            </View>
-            
-            <View style={styles.headerActions}>
-              <TouchableOpacity
-                style={styles.headerActionButton}
-                onPress={handleDownloadInvoice}
-              >
-                <Download size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </LinearGradient>
-      </View>
+      <ModernHeader
+        title={`Order #${orderNumber}`}
+        subtitle={`${order.items?.length || 0} item${(order.items?.length || 0) !== 1 ? 's' : ''}`}
+        leftButton={{
+          icon: <ArrowLeft size={24} color="#FFFFFF" />,
+          onPress: handleBackPress
+        }}
+        rightButton={{
+          icon: <Download size={20} color="#FFFFFF" />,
+          onPress: handleDownloadInvoice
+        }}
+        variant="gradient"
+      />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* Order Status */}
@@ -763,8 +656,14 @@ export default function OrderDetailsScreen() {
       </ScrollView>
 
       {/* Status Update Modal */}
-      {renderStatusModal()}
-    </View>
+      <OrderStatusModal
+        visible={showStatusModal}
+        onClose={() => setShowStatusModal(false)}
+        currentStatus={order.status || order.Order_Status || ''}
+        onUpdateStatus={handleUpdateStatus}
+        isLoading={isUpdatingStatus}
+      />
+    </PlatformSafeAreaView>
   );
 }
 
@@ -772,51 +671,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
-  },
-  header: {
-    paddingTop: 50,
-  },
-  headerGradient: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitleText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  headerActions: {
-    width: 44,
-    alignItems: 'flex-end',
-  },
-  headerActionButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
@@ -1232,99 +1086,5 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: '#ef4444',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statusModal: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    margin: 20,
-    maxWidth: 400,
-    width: '100%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1e293b',
-  },
-  statusOption: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  selectedStatusOption: {
-    backgroundColor: '#ede9fe',
-  },
-  statusOptionText: {
-    fontSize: 16,
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  selectedStatusOptionText: {
-    color: '#667eea',
-    fontWeight: '600',
-  },
-  notesInput: {
-    marginTop: 16,
-    marginBottom: 24,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1e293b',
-    minHeight: 80,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    color: '#64748b',
-    fontWeight: '600',
-  },
-  updateButton: {
-    flex: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  updateGradient: {
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  updateButtonText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
   },
 });

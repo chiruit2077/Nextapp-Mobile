@@ -8,8 +8,9 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
+  ScrollView,
 } from 'react-native';
-import { X, Check } from 'lucide-react-native';
+import { X, Check, Plus, Clock, Package, CircleCheck as CheckCircle, Truck, CircleAlert as AlertCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { isTablet } from '@/hooks/useResponsiveStyles';
@@ -34,47 +35,82 @@ const validTransitions: Record<string, string[]> = {
   Cancelled: []
 };
 
-// Status info with colors and descriptions
-const statusInfo: Record<string, { color: string, bgColor: string, description: string }> = {
-  New: { 
-    color: '#3b82f6', 
-    bgColor: '#dbeafe',
-    description: 'Order has been created and is awaiting processing'
-  },
-  Pending: { 
-    color: '#f59e0b', 
-    bgColor: '#fef3c7',
-    description: 'Order is waiting for confirmation'
-  },
-  Processing: { 
-    color: '#8b5cf6', 
-    bgColor: '#ede9fe',
-    description: 'Order is being processed and prepared'
-  },
-  Hold: { 
-    color: '#f59e0b', 
-    bgColor: '#fef3c7',
-    description: 'Order is on hold pending review'
-  },
-  Picked: { 
-    color: '#059669', 
-    bgColor: '#dcfce7',
-    description: 'Order items have been picked from inventory'
-  },
-  Dispatched: { 
-    color: '#8b5cf6', 
-    bgColor: '#ede9fe',
-    description: 'Order has been dispatched for delivery'
-  },
-  Completed: { 
-    color: '#10b981', 
-    bgColor: '#dcfce7',
-    description: 'Order has been completed successfully'
-  },
-  Cancelled: { 
-    color: '#ef4444', 
-    bgColor: '#fee2e2',
-    description: 'Order has been cancelled'
+// Status info with icons, colors and descriptions
+const getStatusInfo = (status: string) => {
+  const safeStatus = status.toLowerCase();
+  switch (safeStatus) {
+    case 'new':
+      return {
+        icon: <Plus size={20} color="#3b82f6" />,
+        color: '#3b82f6',
+        bgColor: '#dbeafe',
+        text: 'New',
+        description: 'Order has been created and is awaiting processing',
+      };
+    case 'pending':
+      return {
+        icon: <Clock size={20} color="#f59e0b" />,
+        color: '#f59e0b',
+        bgColor: '#fef3c7',
+        text: 'Pending',
+        description: 'Order is waiting for confirmation',
+      };
+    case 'processing':
+      return {
+        icon: <Package size={20} color="#8b5cf6" />,
+        color: '#8b5cf6',
+        bgColor: '#ede9fe',
+        text: 'Processing',
+        description: 'Order is being processed and prepared',
+      };
+    case 'completed':
+      return {
+        icon: <CheckCircle size={20} color="#10b981" />,
+        color: '#10b981',
+        bgColor: '#dcfce7',
+        text: 'Completed',
+        description: 'Order has been completed successfully',
+      };
+    case 'hold':
+      return {
+        icon: <AlertCircle size={20} color="#f59e0b" />,
+        color: '#f59e0b',
+        bgColor: '#fef3c7',
+        text: 'Hold',
+        description: 'Order is on hold pending review',
+      };
+    case 'picked':
+      return {
+        icon: <Package size={20} color="#059669" />,
+        color: '#059669',
+        bgColor: '#dcfce7',
+        text: 'Picked',
+        description: 'Order items have been picked from inventory',
+      };
+    case 'dispatched':
+      return {
+        icon: <Truck size={20} color="#8b5cf6" />,
+        color: '#8b5cf6',
+        bgColor: '#ede9fe',
+        text: 'Dispatched',
+        description: 'Order has been dispatched for delivery',
+      };
+    case 'cancelled':
+      return {
+        icon: <AlertCircle size={20} color="#ef4444" />,
+        color: '#ef4444',
+        bgColor: '#fee2e2',
+        text: 'Cancelled',
+        description: 'Order has been cancelled',
+      };
+    default:
+      return {
+        icon: <Clock size={20} color="#64748b" />,
+        color: '#64748b',
+        bgColor: '#f1f5f9',
+        text: 'Unknown',
+        description: 'Status unknown',
+      };
   }
 };
 
@@ -161,12 +197,13 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
             </Text>
             <View style={[
               styles.statusBadge,
-              { backgroundColor: statusInfo[currentStatus]?.bgColor || '#f1f5f9' },
+              { backgroundColor: getStatusInfo(currentStatus).bgColor },
               isTabletDevice && styles.tabletStatusBadge
             ]}>
+              {getStatusInfo(currentStatus).icon}
               <Text style={[
                 styles.statusText,
-                { color: statusInfo[currentStatus]?.color || '#64748b' },
+                { color: getStatusInfo(currentStatus).color },
                 isTabletDevice && styles.tabletStatusText
               ]}>
                 {currentStatus}
@@ -181,46 +218,62 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
             Select New Status
           </Text>
           
-          <View style={styles.statusOptions}>
+          <ScrollView 
+            style={styles.statusOptionsScroll}
+            contentContainerStyle={styles.statusOptions}
+            showsVerticalScrollIndicator={true}
+          >
             {getAvailableStatuses().length > 0 ? (
-              getAvailableStatuses().map((status) => (
-                <TouchableOpacity
-                  key={status}
-                  style={[
-                    styles.statusOption,
-                    { backgroundColor: statusInfo[status]?.bgColor || '#f1f5f9' },
-                    selectedStatus === status && styles.selectedStatusOption,
-                    isTabletDevice && styles.tabletStatusOption
-                  ]}
-                  onPress={() => setSelectedStatus(status)}
-                >
-                  <Text style={[
-                    styles.statusOptionText,
-                    { color: statusInfo[status]?.color || '#64748b' },
-                    selectedStatus === status && styles.selectedStatusOptionText,
-                    isTabletDevice && styles.tabletStatusOptionText
-                  ]}>
-                    {status}
-                  </Text>
-                  
-                  {selectedStatus === status && (
-                    <View style={[
-                      styles.checkIcon,
-                      isTabletDevice && styles.tabletCheckIcon
-                    ]}>
-                      <Check size={isTabletDevice ? 20 : 16} color={statusInfo[status]?.color || '#64748b'} />
+              getAvailableStatuses().map((status) => {
+                const statusDetails = getStatusInfo(status);
+                return (
+                  <TouchableOpacity
+                    key={status}
+                    style={[
+                      styles.statusOption,
+                      { backgroundColor: statusDetails.bgColor },
+                      selectedStatus === status && [
+                        styles.selectedStatusOption,
+                        { borderColor: statusDetails.color }
+                      ],
+                      isTabletDevice && styles.tabletStatusOption
+                    ]}
+                    onPress={() => setSelectedStatus(status)}
+                  >
+                    <View style={styles.statusOptionHeader}>
+                      <View style={styles.statusIconContainer}>
+                        {statusDetails.icon}
+                      </View>
+                      <Text style={[
+                        styles.statusOptionText,
+                        { color: statusDetails.color },
+                        selectedStatus === status && styles.selectedStatusOptionText,
+                        isTabletDevice && styles.tabletStatusOptionText
+                      ]}>
+                        {status}
+                      </Text>
+                      
+                      {selectedStatus === status && (
+                        <View style={[
+                          styles.checkIcon,
+                          { backgroundColor: `${statusDetails.color}20` },
+                          isTabletDevice && styles.tabletCheckIcon
+                        ]}>
+                          <Check size={isTabletDevice ? 20 : 16} color={statusDetails.color} />
+                        </View>
+                      )}
                     </View>
-                  )}
-                  
-                  <Text style={[
-                    styles.statusDescription,
-                    { color: statusInfo[status]?.color || '#64748b' },
-                    isTabletDevice && styles.tabletStatusDescription
-                  ]}>
-                    {statusInfo[status]?.description}
-                  </Text>
-                </TouchableOpacity>
-              ))
+                    
+                    <Text style={[
+                      styles.statusDescription,
+                      { color: statusDetails.color },
+                      isTabletDevice && styles.tabletStatusDescription
+                    ]}>
+                      {statusDetails.description}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })
             ) : (
               <View style={styles.noStatusesContainer}>
                 <Text style={styles.noStatusesText}>
@@ -228,7 +281,7 @@ export const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
                 </Text>
               </View>
             )}
-          </View>
+          </ScrollView>
           
           <View style={[
             styles.notesContainer,
@@ -382,14 +435,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
+    gap: 6,
   },
   tabletStatusBadge: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
+    gap: 8,
   },
   statusText: {
     fontSize: 14,
@@ -408,14 +465,26 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 20,
   },
-  statusOptions: {
-    marginBottom: 24,
+  statusOptionsScroll: {
     maxHeight: 300,
+  },
+  statusOptions: {
+    paddingRight: 8,
   },
   statusOption: {
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  statusOptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statusIconContainer: {
+    marginRight: 12,
   },
   tabletStatusOption: {
     padding: 20,
@@ -424,12 +493,11 @@ const styles = StyleSheet.create({
   },
   selectedStatusOption: {
     borderWidth: 2,
-    borderColor: '#667eea',
   },
   statusOptionText: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
+    flex: 1,
   },
   tabletStatusOptionText: {
     fontSize: 18,
@@ -438,19 +506,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   checkIcon: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabletCheckIcon: {
-    top: 20,
-    right: 20,
     width: 28,
     height: 28,
     borderRadius: 14,
