@@ -7,7 +7,6 @@ import {
   StyleSheet,
   RefreshControl,
   Dimensions,
-  Platform,
 } from 'react-native';
 import { apiService } from '@/services/api';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -19,10 +18,8 @@ import { ChartBar as BarChart3, TrendingUp, Package, ShoppingCart, Users, Downlo
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { ModernButton } from '@/components/ModernButton';
-import { PlatformSafeAreaView } from '@/components/PlatformSafeAreaView';
-import { isTablet } from '@/hooks/useResponsiveStyles';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface ReportData {
   orders?: {
@@ -63,8 +60,6 @@ export default function ReportsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const isTabletDevice = isTablet();
-  const isLandscape = width > height;
 
   useEffect(() => {
     loadReportData();
@@ -177,96 +172,56 @@ export default function ReportsScreen() {
   };
 
   const renderOverviewReport = () => {
-    // Determine if we should use a multi-column layout for tablets in landscape
-    const useMultiColumn = isTabletDevice && isLandscape;
-    
     return (
-      <ScrollView 
-        style={styles.reportContent} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={useMultiColumn ? styles.multiColumnContent : undefined}
-      >
+      <ScrollView style={styles.reportContent} showsVerticalScrollIndicator={false}>
         {/* Key Metrics */}
-        <Animated.View 
-          entering={FadeInUp.delay(0).duration(600)}
-          style={useMultiColumn ? { width: '48%' } : undefined}
-        >
-          <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
-            Key Performance Indicators
-          </Text>
-          <View style={[
-            styles.metricsGrid, 
-            isTabletDevice && styles.tabletMetricsGrid,
-            useMultiColumn && styles.multiColumnMetricsGrid
-          ]}>
-            <View style={[styles.metricCard, isTabletDevice && styles.tabletMetricCard]}>
+        <Animated.View entering={FadeInUp.delay(0).duration(600)}>
+          <Text style={styles.sectionTitle}>Key Performance Indicators</Text>
+          <View style={styles.metricsGrid}>
+            <View style={styles.metricCard}>
               <LinearGradient colors={['#667eea', '#764ba2']} style={styles.metricGradient}>
-                <DollarSign size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.metricValue, isTabletDevice && styles.tabletMetricValue]}>
-                  {formatCurrency(reportData.orders?.totalRevenue || 0)}
-                </Text>
-                <Text style={[styles.metricLabel, isTabletDevice && styles.tabletMetricLabel]}>
-                  Total Revenue
-                </Text>
+                <DollarSign size={24} color="#FFFFFF" />
+                <Text style={styles.metricValue}>{formatCurrency(reportData.orders?.totalRevenue || 0)}</Text>
+                <Text style={styles.metricLabel}>Total Revenue</Text>
                 <View style={styles.metricTrend}>
-                  <ArrowUpRight size={isTabletDevice ? 18 : 16} color="#FFFFFF" />
-                  <Text style={[styles.metricTrendText, isTabletDevice && styles.tabletMetricTrendText]}>
-                    {formatPercentage(reportData.orders?.growth || 0)}
-                  </Text>
+                  <ArrowUpRight size={16} color="#FFFFFF" />
+                  <Text style={styles.metricTrendText}>{formatPercentage(reportData.orders?.growth || 0)}</Text>
                 </View>
               </LinearGradient>
             </View>
 
-            <View style={[styles.metricCard, isTabletDevice && styles.tabletMetricCard]}>
+            <View style={styles.metricCard}>
               <LinearGradient colors={['#10b981', '#059669']} style={styles.metricGradient}>
-                <ShoppingCart size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.metricValue, isTabletDevice && styles.tabletMetricValue]}>
-                  {reportData.orders?.totalOrders || 0}
-                </Text>
-                <Text style={[styles.metricLabel, isTabletDevice && styles.tabletMetricLabel]}>
-                  Total Orders
-                </Text>
+                <ShoppingCart size={24} color="#FFFFFF" />
+                <Text style={styles.metricValue}>{reportData.orders?.totalOrders || 0}</Text>
+                <Text style={styles.metricLabel}>Total Orders</Text>
                 <View style={styles.metricTrend}>
-                  <ArrowUpRight size={isTabletDevice ? 18 : 16} color="#FFFFFF" />
-                  <Text style={[styles.metricTrendText, isTabletDevice && styles.tabletMetricTrendText]}>
-                    +8.2%
-                  </Text>
+                  <ArrowUpRight size={16} color="#FFFFFF" />
+                  <Text style={styles.metricTrendText}>+8.2%</Text>
                 </View>
               </LinearGradient>
             </View>
 
-            <View style={[styles.metricCard, isTabletDevice && styles.tabletMetricCard]}>
+            <View style={styles.metricCard}>
               <LinearGradient colors={['#f59e0b', '#d97706']} style={styles.metricGradient}>
-                <Package size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.metricValue, isTabletDevice && styles.tabletMetricValue]}>
-                  {reportData.inventory?.totalParts || 0}
-                </Text>
-                <Text style={[styles.metricLabel, isTabletDevice && styles.tabletMetricLabel]}>
-                  Total Parts
-                </Text>
+                <Package size={24} color="#FFFFFF" />
+                <Text style={styles.metricValue}>{reportData.inventory?.totalParts || 0}</Text>
+                <Text style={styles.metricLabel}>Total Parts</Text>
                 <View style={styles.metricTrend}>
-                  <ArrowUpRight size={isTabletDevice ? 18 : 16} color="#FFFFFF" />
-                  <Text style={[styles.metricTrendText, isTabletDevice && styles.tabletMetricTrendText]}>
-                    +3.1%
-                  </Text>
+                  <ArrowUpRight size={16} color="#FFFFFF" />
+                  <Text style={styles.metricTrendText}>+3.1%</Text>
                 </View>
               </LinearGradient>
             </View>
 
-            <View style={[styles.metricCard, isTabletDevice && styles.tabletMetricCard]}>
+            <View style={styles.metricCard}>
               <LinearGradient colors={['#8b5cf6', '#7c3aed']} style={styles.metricGradient}>
-                <Users size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.metricValue, isTabletDevice && styles.tabletMetricValue]}>
-                  {reportData.retailers?.activeRetailers || 0}
-                </Text>
-                <Text style={[styles.metricLabel, isTabletDevice && styles.tabletMetricLabel]}>
-                  Active Retailers
-                </Text>
+                <Users size={24} color="#FFFFFF" />
+                <Text style={styles.metricValue}>{reportData.retailers?.activeRetailers || 0}</Text>
+                <Text style={styles.metricLabel}>Active Retailers</Text>
                 <View style={styles.metricTrend}>
-                  <ArrowUpRight size={isTabletDevice ? 18 : 16} color="#FFFFFF" />
-                  <Text style={[styles.metricTrendText, isTabletDevice && styles.tabletMetricTrendText]}>
-                    +5.7%
-                  </Text>
+                  <ArrowUpRight size={16} color="#FFFFFF" />
+                  <Text style={styles.metricTrendText}>+5.7%</Text>
                 </View>
               </LinearGradient>
             </View>
@@ -274,106 +229,63 @@ export default function ReportsScreen() {
         </Animated.View>
 
         {/* Quick Stats */}
-        <Animated.View 
-          entering={FadeInUp.delay(200).duration(600)}
-          style={useMultiColumn ? { width: '48%' } : undefined}
-        >
-          <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
-            Quick Stats
-          </Text>
-          <View style={[
-            styles.quickStatsContainer, 
-            isTabletDevice && styles.tabletQuickStatsContainer,
-            useMultiColumn && styles.multiColumnQuickStatsContainer
-          ]}>
-            <View style={[styles.quickStatCard, isTabletDevice && styles.tabletQuickStatCard]}>
-              <View style={[styles.quickStatIcon, isTabletDevice && styles.tabletQuickStatIcon]}>
-                <Target size={isTabletDevice ? 24 : 20} color="#667eea" />
+        <Animated.View entering={FadeInUp.delay(200).duration(600)}>
+          <Text style={styles.sectionTitle}>Quick Stats</Text>
+          <View style={styles.quickStatsContainer}>
+            <View style={styles.quickStatCard}>
+              <View style={styles.quickStatIcon}>
+                <Target size={20} color="#667eea" />
               </View>
-              <Text style={[styles.quickStatValue, isTabletDevice && styles.tabletQuickStatValue]}>
-                {formatCurrency(reportData.orders?.averageOrderValue || 0)}
-              </Text>
-              <Text style={[styles.quickStatLabel, isTabletDevice && styles.tabletQuickStatLabel]}>
-                Avg Order Value
-              </Text>
+              <Text style={styles.quickStatValue}>{formatCurrency(reportData.orders?.averageOrderValue || 0)}</Text>
+              <Text style={styles.quickStatLabel}>Avg Order Value</Text>
             </View>
 
-            <View style={[styles.quickStatCard, isTabletDevice && styles.tabletQuickStatCard]}>
-              <View style={[styles.quickStatIcon, isTabletDevice && styles.tabletQuickStatIcon]}>
-                <Clock size={isTabletDevice ? 24 : 20} color="#f59e0b" />
+            <View style={styles.quickStatCard}>
+              <View style={styles.quickStatIcon}>
+                <Clock size={20} color="#f59e0b" />
               </View>
-              <Text style={[styles.quickStatValue, isTabletDevice && styles.tabletQuickStatValue]}>
-                {formatCurrency(reportData.sales?.dailyAverage || 0)}
-              </Text>
-              <Text style={[styles.quickStatLabel, isTabletDevice && styles.tabletQuickStatLabel]}>
-                Daily Average
-              </Text>
+              <Text style={styles.quickStatValue}>{formatCurrency(reportData.sales?.dailyAverage || 0)}</Text>
+              <Text style={styles.quickStatLabel}>Daily Average</Text>
             </View>
 
-            <View style={[styles.quickStatCard, isTabletDevice && styles.tabletQuickStatCard]}>
-              <View style={[styles.quickStatIcon, isTabletDevice && styles.tabletQuickStatIcon]}>
-                <Zap size={isTabletDevice ? 24 : 20} color="#10b981" />
+            <View style={styles.quickStatCard}>
+              <View style={styles.quickStatIcon}>
+                <Zap size={20} color="#10b981" />
               </View>
-              <Text style={[styles.quickStatValue, isTabletDevice && styles.tabletQuickStatValue]}>
-                {reportData.inventory?.lowStockItems || 0}
-              </Text>
-              <Text style={[styles.quickStatLabel, isTabletDevice && styles.tabletQuickStatLabel]}>
-                Low Stock Items
-              </Text>
+              <Text style={styles.quickStatValue}>{reportData.inventory?.lowStockItems || 0}</Text>
+              <Text style={styles.quickStatLabel}>Low Stock Items</Text>
             </View>
 
-            <View style={[styles.quickStatCard, isTabletDevice && styles.tabletQuickStatCard]}>
-              <View style={[styles.quickStatIcon, isTabletDevice && styles.tabletQuickStatIcon]}>
-                <Award size={isTabletDevice ? 24 : 20} color="#8b5cf6" />
+            <View style={styles.quickStatCard}>
+              <View style={styles.quickStatIcon}>
+                <Award size={20} color="#8b5cf6" />
               </View>
-              <Text style={[styles.quickStatValue, isTabletDevice && styles.tabletQuickStatValue]}>
-                {reportData.retailers?.newRetailers || 0}
-              </Text>
-              <Text style={[styles.quickStatLabel, isTabletDevice && styles.tabletQuickStatLabel]}>
-                New Retailers
-              </Text>
+              <Text style={styles.quickStatValue}>{reportData.retailers?.newRetailers || 0}</Text>
+              <Text style={styles.quickStatLabel}>New Retailers</Text>
             </View>
           </View>
         </Animated.View>
 
         {/* Top Performers */}
-        <Animated.View entering={FadeInUp.delay(400).duration(600)} style={{ width: '100%' }}>
-          <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
-            Top Performers
-          </Text>
-          <View style={[
-            styles.topPerformersContainer, 
-            isTabletDevice && styles.tabletTopPerformersContainer,
-            useMultiColumn && styles.multiColumnTopPerformersContainer
-          ]}>
-            <View style={[styles.performerCard, isTabletDevice && styles.tabletPerformerCard]}>
-              <Text style={[styles.performerTitle, isTabletDevice && styles.tabletPerformerTitle]}>
-                Top Products
-              </Text>
+        <Animated.View entering={FadeInUp.delay(400).duration(600)}>
+          <Text style={styles.sectionTitle}>Top Performers</Text>
+          <View style={styles.topPerformersContainer}>
+            <View style={styles.performerCard}>
+              <Text style={styles.performerTitle}>Top Products</Text>
               {reportData.orders?.topProducts?.slice(0, 3).map((product, index) => (
                 <View key={index} style={styles.performerItem}>
-                  <Text style={[styles.performerName, isTabletDevice && styles.tabletPerformerName]}>
-                    {product.name}
-                  </Text>
-                  <Text style={[styles.performerValue, isTabletDevice && styles.tabletPerformerValue]}>
-                    {formatCurrency(product.revenue)}
-                  </Text>
+                  <Text style={styles.performerName}>{product.name}</Text>
+                  <Text style={styles.performerValue}>{formatCurrency(product.revenue)}</Text>
                 </View>
               ))}
             </View>
 
-            <View style={[styles.performerCard, isTabletDevice && styles.tabletPerformerCard]}>
-              <Text style={[styles.performerTitle, isTabletDevice && styles.tabletPerformerTitle]}>
-                Top Retailers
-              </Text>
+            <View style={styles.performerCard}>
+              <Text style={styles.performerTitle}>Top Retailers</Text>
               {reportData.retailers?.topRetailers?.slice(0, 3).map((retailer, index) => (
                 <View key={index} style={styles.performerItem}>
-                  <Text style={[styles.performerName, isTabletDevice && styles.tabletPerformerName]}>
-                    {retailer.name}
-                  </Text>
-                  <Text style={[styles.performerValue, isTabletDevice && styles.tabletPerformerValue]}>
-                    {formatCurrency(retailer.revenue)}
-                  </Text>
+                  <Text style={styles.performerName}>{retailer.name}</Text>
+                  <Text style={styles.performerValue}>{formatCurrency(retailer.revenue)}</Text>
                 </View>
               ))}
             </View>
@@ -390,42 +302,27 @@ export default function ReportsScreen() {
     return (
       <ScrollView style={styles.reportContent} showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInUp.delay(0).duration(600)}>
-          <View style={[
-            styles.summaryCards, 
-            isTabletDevice && styles.tabletSummaryCards
-          ]}>
-            <View style={[styles.summaryCard, isTabletDevice && styles.tabletSummaryCard]}>
+          <View style={styles.summaryCards}>
+            <View style={styles.summaryCard}>
               <LinearGradient colors={['#2563EB', '#1d4ed8']} style={styles.summaryGradient}>
-                <ShoppingCart size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.summaryNumber, isTabletDevice && styles.tabletSummaryNumber]}>
-                  {data.totalOrders}
-                </Text>
-                <Text style={[styles.summaryLabel, isTabletDevice && styles.tabletSummaryLabel]}>
-                  Total Orders
-                </Text>
-                <View style={[styles.summaryTrend, isTabletDevice && styles.tabletSummaryTrend]}>
-                  <ArrowUpRight size={isTabletDevice ? 16 : 14} color="#FFFFFF" />
-                  <Text style={[styles.summaryTrendText, isTabletDevice && styles.tabletSummaryTrendText]}>
-                    +15%
-                  </Text>
+                <ShoppingCart size={24} color="#FFFFFF" />
+                <Text style={styles.summaryNumber}>{data.totalOrders}</Text>
+                <Text style={styles.summaryLabel}>Total Orders</Text>
+                <View style={styles.summaryTrend}>
+                  <ArrowUpRight size={14} color="#FFFFFF" />
+                  <Text style={styles.summaryTrendText}>+15%</Text>
                 </View>
               </LinearGradient>
             </View>
             
-            <View style={[styles.summaryCard, isTabletDevice && styles.tabletSummaryCard]}>
+            <View style={styles.summaryCard}>
               <LinearGradient colors={['#059669', '#047857']} style={styles.summaryGradient}>
-                <DollarSign size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.summaryNumber, isTabletDevice && styles.tabletSummaryNumber]}>
-                  {formatCurrency(data.totalRevenue)}
-                </Text>
-                <Text style={[styles.summaryLabel, isTabletDevice && styles.tabletSummaryLabel]}>
-                  Revenue
-                </Text>
-                <View style={[styles.summaryTrend, isTabletDevice && styles.tabletSummaryTrend]}>
-                  <ArrowUpRight size={isTabletDevice ? 16 : 14} color="#FFFFFF" />
-                  <Text style={[styles.summaryTrendText, isTabletDevice && styles.tabletSummaryTrendText]}>
-                    {formatPercentage(data.growth)}
-                  </Text>
+                <DollarSign size={24} color="#FFFFFF" />
+                <Text style={styles.summaryNumber}>{formatCurrency(data.totalRevenue)}</Text>
+                <Text style={styles.summaryLabel}>Revenue</Text>
+                <View style={styles.summaryTrend}>
+                  <ArrowUpRight size={14} color="#FFFFFF" />
+                  <Text style={styles.summaryTrendText}>{formatPercentage(data.growth)}</Text>
                 </View>
               </LinearGradient>
             </View>
@@ -433,23 +330,15 @@ export default function ReportsScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(200).duration(600)}>
-          <View style={[styles.reportSection, isTabletDevice && styles.tabletReportSection]}>
-            <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
-              Top Products
-            </Text>
+          <View style={styles.reportSection}>
+            <Text style={styles.sectionTitle}>Top Products</Text>
             {data.topProducts?.map((product, index) => (
-              <View key={index} style={[styles.listItem, isTabletDevice && styles.tabletListItem]}>
+              <View key={index} style={styles.listItem}>
                 <View style={styles.listItemContent}>
-                  <Text style={[styles.listItemTitle, isTabletDevice && styles.tabletListItemTitle]}>
-                    {product.name}
-                  </Text>
-                  <Text style={[styles.listItemSubtitle, isTabletDevice && styles.tabletListItemSubtitle]}>
-                    Quantity: {product.quantity}
-                  </Text>
+                  <Text style={styles.listItemTitle}>{product.name}</Text>
+                  <Text style={styles.listItemSubtitle}>Quantity: {product.quantity}</Text>
                 </View>
-                <Text style={[styles.listItemValue, isTabletDevice && styles.tabletListItemValue]}>
-                  {formatCurrency(product.revenue)}
-                </Text>
+                <Text style={styles.listItemValue}>{formatCurrency(product.revenue)}</Text>
               </View>
             ))}
           </View>
@@ -465,68 +354,43 @@ export default function ReportsScreen() {
     return (
       <ScrollView style={styles.reportContent} showsVerticalScrollIndicator={false}>
         <Animated.View entering={FadeInUp.delay(0).duration(600)}>
-          <View style={[
-            styles.summaryCards, 
-            isTabletDevice && styles.tabletSummaryCards
-          ]}>
-            <View style={[styles.summaryCard, isTabletDevice && styles.tabletSummaryCard]}>
+          <View style={styles.summaryCards}>
+            <View style={styles.summaryCard}>
               <LinearGradient colors={['#059669', '#047857']} style={styles.summaryGradient}>
-                <DollarSign size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.summaryNumber, isTabletDevice && styles.tabletSummaryNumber]}>
-                  {formatCurrency(data.totalSales)}
-                </Text>
-                <Text style={[styles.summaryLabel, isTabletDevice && styles.tabletSummaryLabel]}>
-                  Total Sales
-                </Text>
+                <DollarSign size={24} color="#FFFFFF" />
+                <Text style={styles.summaryNumber}>{formatCurrency(data.totalSales)}</Text>
+                <Text style={styles.summaryLabel}>Total Sales</Text>
               </LinearGradient>
             </View>
             
-            <View style={[styles.summaryCard, isTabletDevice && styles.tabletSummaryCard]}>
+            <View style={styles.summaryCard}>
               <LinearGradient colors={['#2563EB', '#1d4ed8']} style={styles.summaryGradient}>
-                <Calendar size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.summaryNumber, isTabletDevice && styles.tabletSummaryNumber]}>
-                  {formatCurrency(data.dailyAverage)}
-                </Text>
-                <Text style={[styles.summaryLabel, isTabletDevice && styles.tabletSummaryLabel]}>
-                  Daily Average
-                </Text>
+                <Calendar size={24} color="#FFFFFF" />
+                <Text style={styles.summaryNumber}>{formatCurrency(data.dailyAverage)}</Text>
+                <Text style={styles.summaryLabel}>Daily Average</Text>
               </LinearGradient>
             </View>
           </View>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(200).duration(600)}>
-          <View style={[styles.reportSection, isTabletDevice && styles.tabletReportSection]}>
-            <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
-              Growth Metrics
-            </Text>
+          <View style={styles.reportSection}>
+            <Text style={styles.sectionTitle}>Growth Metrics</Text>
             <View style={styles.growthMetrics}>
-              <View style={[styles.growthItem, isTabletDevice && styles.tabletGrowthItem]}>
-                <Text style={[styles.growthLabel, isTabletDevice && styles.tabletGrowthLabel]}>
-                  Monthly Growth
-                </Text>
+              <View style={styles.growthItem}>
+                <Text style={styles.growthLabel}>Monthly Growth</Text>
                 <View style={styles.growthValue}>
-                  <ArrowUpRight size={isTabletDevice ? 20 : 16} color="#10b981" />
-                  <Text style={[
-                    styles.growthText, 
-                    { color: '#10b981' },
-                    isTabletDevice && styles.tabletGrowthText
-                  ]}>
+                  <ArrowUpRight size={16} color="#10b981" />
+                  <Text style={[styles.growthText, { color: '#10b981' }]}>
                     {formatPercentage(data.monthlyGrowth)}
                   </Text>
                 </View>
               </View>
-              <View style={[styles.growthItem, isTabletDevice && styles.tabletGrowthItem]}>
-                <Text style={[styles.growthLabel, isTabletDevice && styles.tabletGrowthLabel]}>
-                  Weekly Growth
-                </Text>
+              <View style={styles.growthItem}>
+                <Text style={styles.growthLabel}>Weekly Growth</Text>
                 <View style={styles.growthValue}>
-                  <ArrowUpRight size={isTabletDevice ? 20 : 16} color="#10b981" />
-                  <Text style={[
-                    styles.growthText, 
-                    { color: '#10b981' },
-                    isTabletDevice && styles.tabletGrowthText
-                  ]}>
+                  <ArrowUpRight size={16} color="#10b981" />
+                  <Text style={[styles.growthText, { color: '#10b981' }]}>
                     {formatPercentage(data.weeklyGrowth)}
                   </Text>
                 </View>
@@ -536,194 +400,15 @@ export default function ReportsScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(400).duration(600)}>
-          <View style={[styles.reportSection, isTabletDevice && styles.tabletReportSection]}>
-            <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
-              Top Salespeople
-            </Text>
+          <View style={styles.reportSection}>
+            <Text style={styles.sectionTitle}>Top Salespeople</Text>
             {data.topSalespeople?.map((salesperson, index) => (
-              <View key={index} style={[styles.listItem, isTabletDevice && styles.tabletListItem]}>
+              <View key={index} style={styles.listItem}>
                 <View style={styles.listItemContent}>
-                  <Text style={[styles.listItemTitle, isTabletDevice && styles.tabletListItemTitle]}>
-                    {salesperson.name}
-                  </Text>
-                  <Text style={[styles.listItemSubtitle, isTabletDevice && styles.tabletListItemSubtitle]}>
-                    {salesperson.sales} sales
-                  </Text>
+                  <Text style={styles.listItemTitle}>{salesperson.name}</Text>
+                  <Text style={styles.listItemSubtitle}>{salesperson.sales} sales</Text>
                 </View>
-                <Text style={[styles.listItemValue, isTabletDevice && styles.tabletListItemValue]}>
-                  {formatCurrency(salesperson.revenue)}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </Animated.View>
-      </ScrollView>
-    );
-  };
-
-  const renderInventoryReport = () => {
-    const data = reportData.inventory;
-    if (!data) return null;
-
-    return (
-      <ScrollView style={styles.reportContent} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInUp.delay(0).duration(600)}>
-          <View style={[
-            styles.summaryCards, 
-            isTabletDevice && styles.tabletSummaryCards
-          ]}>
-            <View style={[styles.summaryCard, isTabletDevice && styles.tabletSummaryCard]}>
-              <LinearGradient colors={['#8b5cf6', '#7c3aed']} style={styles.summaryGradient}>
-                <Package size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.summaryNumber, isTabletDevice && styles.tabletSummaryNumber]}>
-                  {data.totalParts}
-                </Text>
-                <Text style={[styles.summaryLabel, isTabletDevice && styles.tabletSummaryLabel]}>
-                  Total Parts
-                </Text>
-              </LinearGradient>
-            </View>
-            
-            <View style={[styles.summaryCard, isTabletDevice && styles.tabletSummaryCard]}>
-              <LinearGradient colors={['#ef4444', '#dc2626']} style={styles.summaryGradient}>
-                <Package size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.summaryNumber, isTabletDevice && styles.tabletSummaryNumber]}>
-                  {data.lowStockItems}
-                </Text>
-                <Text style={[styles.summaryLabel, isTabletDevice && styles.tabletSummaryLabel]}>
-                  Low Stock Items
-                </Text>
-              </LinearGradient>
-            </View>
-          </View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(200).duration(600)}>
-          <View style={[styles.reportSection, isTabletDevice && styles.tabletReportSection]}>
-            <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
-              Inventory Value
-            </Text>
-            <View style={[styles.inventoryValueCard, isTabletDevice && styles.tabletInventoryValueCard]}>
-              <LinearGradient 
-                colors={['#059669', '#047857']} 
-                style={[styles.inventoryValueGradient, isTabletDevice && styles.tabletInventoryValueGradient]}
-              >
-                <DollarSign size={isTabletDevice ? 32 : 28} color="#FFFFFF" />
-                <Text style={[styles.inventoryValueAmount, isTabletDevice && styles.tabletInventoryValueAmount]}>
-                  {formatCurrency(data.totalValue)}
-                </Text>
-                <Text style={[styles.inventoryValueLabel, isTabletDevice && styles.tabletInventoryValueLabel]}>
-                  Total Inventory Value
-                </Text>
-              </LinearGradient>
-            </View>
-          </View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(400).duration(600)}>
-          <View style={[styles.reportSection, isTabletDevice && styles.tabletReportSection]}>
-            <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
-              Top Categories
-            </Text>
-            {data.topCategories?.map((category, index) => (
-              <View key={index} style={[styles.listItem, isTabletDevice && styles.tabletListItem]}>
-                <View style={styles.listItemContent}>
-                  <Text style={[styles.listItemTitle, isTabletDevice && styles.tabletListItemTitle]}>
-                    {category.category}
-                  </Text>
-                  <Text style={[styles.listItemSubtitle, isTabletDevice && styles.tabletListItemSubtitle]}>
-                    {category.count} parts
-                  </Text>
-                </View>
-                <Text style={[styles.listItemValue, isTabletDevice && styles.tabletListItemValue]}>
-                  {formatCurrency(category.value)}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </Animated.View>
-      </ScrollView>
-    );
-  };
-
-  const renderRetailersReport = () => {
-    const data = reportData.retailers;
-    if (!data) return null;
-
-    return (
-      <ScrollView style={styles.reportContent} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeInUp.delay(0).duration(600)}>
-          <View style={[
-            styles.summaryCards, 
-            isTabletDevice && styles.tabletSummaryCards
-          ]}>
-            <View style={[styles.summaryCard, isTabletDevice && styles.tabletSummaryCard]}>
-              <LinearGradient colors={['#667eea', '#764ba2']} style={styles.summaryGradient}>
-                <Users size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.summaryNumber, isTabletDevice && styles.tabletSummaryNumber]}>
-                  {data.totalRetailers}
-                </Text>
-                <Text style={[styles.summaryLabel, isTabletDevice && styles.tabletSummaryLabel]}>
-                  Total Retailers
-                </Text>
-              </LinearGradient>
-            </View>
-            
-            <View style={[styles.summaryCard, isTabletDevice && styles.tabletSummaryCard]}>
-              <LinearGradient colors={['#10b981', '#059669']} style={styles.summaryGradient}>
-                <Users size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
-                <Text style={[styles.summaryNumber, isTabletDevice && styles.tabletSummaryNumber]}>
-                  {data.activeRetailers}
-                </Text>
-                <Text style={[styles.summaryLabel, isTabletDevice && styles.tabletSummaryLabel]}>
-                  Active Retailers
-                </Text>
-              </LinearGradient>
-            </View>
-          </View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(200).duration(600)}>
-          <View style={[styles.reportSection, isTabletDevice && styles.tabletReportSection]}>
-            <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
-              New Retailers
-            </Text>
-            <View style={[styles.newRetailersCard, isTabletDevice && styles.tabletNewRetailersCard]}>
-              <View style={[styles.newRetailersContent, isTabletDevice && styles.tabletNewRetailersContent]}>
-                <View style={[styles.newRetailersIcon, isTabletDevice && styles.tabletNewRetailersIcon]}>
-                  <Users size={isTabletDevice ? 32 : 28} color="#f59e0b" />
-                </View>
-                <View style={styles.newRetailersInfo}>
-                  <Text style={[styles.newRetailersCount, isTabletDevice && styles.tabletNewRetailersCount]}>
-                    {data.newRetailers}
-                  </Text>
-                  <Text style={[styles.newRetailersLabel, isTabletDevice && styles.tabletNewRetailersLabel]}>
-                    New retailers joined this month
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInUp.delay(400).duration(600)}>
-          <View style={[styles.reportSection, isTabletDevice && styles.tabletReportSection]}>
-            <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
-              Top Retailers
-            </Text>
-            {data.topRetailers?.map((retailer, index) => (
-              <View key={index} style={[styles.listItem, isTabletDevice && styles.tabletListItem]}>
-                <View style={styles.listItemContent}>
-                  <Text style={[styles.listItemTitle, isTabletDevice && styles.tabletListItemTitle]}>
-                    {retailer.name}
-                  </Text>
-                  <Text style={[styles.listItemSubtitle, isTabletDevice && styles.tabletListItemSubtitle]}>
-                    {retailer.orders} orders
-                  </Text>
-                </View>
-                <Text style={[styles.listItemValue, isTabletDevice && styles.tabletListItemValue]}>
-                  {formatCurrency(retailer.revenue)}
-                </Text>
+                <Text style={styles.listItemValue}>{formatCurrency(salesperson.revenue)}</Text>
               </View>
             ))}
           </View>
@@ -740,10 +425,6 @@ export default function ReportsScreen() {
         return renderOrdersReport();
       case 'sales':
         return renderSalesReport();
-      case 'inventory':
-        return renderInventoryReport();
-      case 'retailers':
-        return renderRetailersReport();
       default:
         return renderOverviewReport();
     }
@@ -765,14 +446,14 @@ export default function ReportsScreen() {
   const tabs = getReportTabs();
 
   return (
-    <PlatformSafeAreaView style={styles.container} gradientHeader>
+    <View style={styles.container}>
       {/* Header */}
       <ModernHeader
         title="Reports & Analytics"
         subtitle="Business insights and performance metrics"
         leftButton={<HamburgerMenu />}
         rightButton={{
-          icon: <Download size={isTabletDevice ? 20 : 16} color="#FFFFFF" />,
+          icon: <Download size={16} color="#FFFFFF" />,
           title: "Export",
           onPress: handleExport
         }}
@@ -780,25 +461,17 @@ export default function ReportsScreen() {
       />
 
       {/* Report Tabs */}
-      <View style={[styles.tabContainer, isTabletDevice && styles.tabletTabContainer]}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          style={styles.tabScroll}
-          contentContainerStyle={isTabletDevice && styles.tabletTabScrollContent}
-        >
+      <View style={styles.tabContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll}>
           {tabs.map((tab, index) => (
             <Animated.View key={tab.key} entering={FadeInDown.delay(index * 100).duration(600)}>
               <ModernButton
                 title={tab.title}
                 onPress={() => setSelectedReport(tab.key as ReportType)}
-                icon={<tab.icon size={isTabletDevice ? 24 : 20} color={selectedReport === tab.key ? '#FFFFFF' : '#64748B'} />}
+                icon={<tab.icon size={20} color={selectedReport === tab.key ? '#FFFFFF' : '#64748B'} />}
                 variant={selectedReport === tab.key ? 'primary' : 'outline'}
-                size={isTabletDevice ? 'medium' : 'small'}
-                style={selectedReport === tab.key ? 
-                  [styles.tab, styles.activeTab, isTabletDevice && styles.tabletTab] : 
-                  [styles.tab, isTabletDevice && styles.tabletTab]
-                }
+                size="small"
+                style={selectedReport === tab.key ? Object.assign({}, styles.tab, styles.activeTab) : styles.tab}
               />
             </Animated.View>
           ))}
@@ -806,15 +479,12 @@ export default function ReportsScreen() {
       </View>
 
       {/* Report Content */}
-      <View style={[
-        styles.content, 
-        isTabletDevice && styles.tabletContent
-      ]}>
+      <View style={styles.content}>
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh}>
           {renderCurrentReport()}
         </RefreshControl>
       </View>
-    </PlatformSafeAreaView>
+    </View>
   );
 }
 
@@ -829,15 +499,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E2E8F0',
     paddingVertical: 8,
   },
-  tabletTabContainer: {
-    paddingVertical: 12,
-  },
   tabScroll: {
     paddingHorizontal: 16,
-  },
-  tabletTabScrollContent: {
-    paddingHorizontal: 24,
-    justifyContent: 'center',
   },
   tab: {
     flexDirection: 'row',
@@ -847,12 +510,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderRadius: 12,
     backgroundColor: '#F8FAFC',
-  },
-  tabletTab: {
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    marginRight: 12,
-    borderRadius: 16,
   },
   activeTab: {
     backgroundColor: '#667eea',
@@ -868,20 +525,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-  },
-  tabletContent: {
-    paddingHorizontal: 24,
   },
   reportContent: {
     flex: 1,
-    paddingVertical: 16,
-  },
-  multiColumnContent: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    padding: 16,
   },
   sectionTitle: {
     fontSize: 20,
@@ -890,23 +537,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginTop: 8,
   },
-  tabletSectionTitle: {
-    fontSize: 24,
-    marginBottom: 20,
-    marginTop: 12,
-  },
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
     marginBottom: 32,
-  },
-  tabletMetricsGrid: {
-    gap: 16,
-    marginBottom: 40,
-  },
-  multiColumnMetricsGrid: {
-    marginBottom: 0,
   },
   metricCard: {
     flex: 1,
@@ -922,16 +557,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  tabletMetricCard: {
-    borderRadius: 20,
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 10,
-  },
   metricGradient: {
     padding: 20,
     alignItems: 'center',
@@ -943,21 +568,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 4,
   },
-  tabletMetricValue: {
-    fontSize: 32,
-    marginTop: 16,
-    marginBottom: 6,
-  },
   metricLabel: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 8,
-  },
-  tabletMetricLabel: {
-    fontSize: 16,
-    marginBottom: 12,
   },
   metricTrend: {
     flexDirection: 'row',
@@ -967,33 +583,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
-  tabletMetricTrend: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-  },
   metricTrendText: {
     fontSize: 12,
     color: '#FFFFFF',
     fontWeight: '600',
     marginLeft: 4,
   },
-  tabletMetricTrendText: {
-    fontSize: 14,
-    marginLeft: 6,
-  },
   quickStatsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
     marginBottom: 32,
-  },
-  tabletQuickStatsContainer: {
-    gap: 16,
-    marginBottom: 40,
-  },
-  multiColumnQuickStatsContainer: {
-    marginBottom: 0,
   },
   quickStatCard: {
     flex: 1,
@@ -1013,17 +613,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  tabletQuickStatCard: {
-    borderRadius: 20,
-    padding: 24,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
-  },
   quickStatIcon: {
     width: 48,
     height: 48,
@@ -1033,21 +622,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
   },
-  tabletQuickStatIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 16,
-  },
   quickStatValue: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1E293B',
     marginBottom: 4,
-  },
-  tabletQuickStatValue: {
-    fontSize: 26,
-    marginBottom: 6,
   },
   quickStatLabel: {
     fontSize: 12,
@@ -1055,20 +634,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  tabletQuickStatLabel: {
-    fontSize: 14,
-  },
   topPerformersContainer: {
     gap: 16,
     marginBottom: 32,
-  },
-  tabletTopPerformersContainer: {
-    gap: 20,
-    marginBottom: 40,
-  },
-  multiColumnTopPerformersContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
   },
   performerCard: {
     backgroundColor: '#FFFFFF',
@@ -1084,28 +652,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 3,
-    flex: 1,
-  },
-  tabletPerformerCard: {
-    borderRadius: 20,
-    padding: 24,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
   },
   performerTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1E293B',
     marginBottom: 16,
-  },
-  tabletPerformerTitle: {
-    fontSize: 18,
-    marginBottom: 20,
   },
   performerItem: {
     flexDirection: 'row',
@@ -1121,25 +673,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
-  tabletPerformerName: {
-    fontSize: 16,
-  },
   performerValue: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#059669',
   },
-  tabletPerformerValue: {
-    fontSize: 16,
-  },
   summaryCards: {
     flexDirection: 'row',
     gap: 12,
     marginBottom: 24,
-  },
-  tabletSummaryCards: {
-    gap: 16,
-    marginBottom: 32,
   },
   summaryCard: {
     flex: 1,
@@ -1154,16 +696,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  tabletSummaryCard: {
-    borderRadius: 20,
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 10,
-  },
   summaryGradient: {
     padding: 20,
     alignItems: 'center',
@@ -1175,21 +707,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
   },
-  tabletSummaryNumber: {
-    fontSize: 28,
-    marginTop: 12,
-    marginBottom: 6,
-  },
   summaryLabel: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 8,
-  },
-  tabletSummaryLabel: {
-    fontSize: 14,
-    marginBottom: 12,
   },
   summaryTrend: {
     flexDirection: 'row',
@@ -1199,20 +722,11 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
   },
-  tabletSummaryTrend: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
   summaryTrendText: {
     fontSize: 10,
     color: '#FFFFFF',
     fontWeight: '600',
     marginLeft: 2,
-  },
-  tabletSummaryTrendText: {
-    fontSize: 12,
-    marginLeft: 4,
   },
   reportSection: {
     backgroundColor: '#FFFFFF',
@@ -1230,18 +744,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  tabletReportSection: {
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 24,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 5,
-  },
   growthMetrics: {
     gap: 16,
   },
@@ -1253,16 +755,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
-  tabletGrowthItem: {
-    paddingVertical: 16,
-  },
   growthLabel: {
     fontSize: 16,
     color: '#374151',
     fontWeight: '500',
-  },
-  tabletGrowthLabel: {
-    fontSize: 18,
   },
   growthValue: {
     flexDirection: 'row',
@@ -1273,10 +769,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 4,
   },
-  tabletGrowthText: {
-    fontSize: 18,
-    marginLeft: 6,
-  },
   listItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1284,9 +776,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
-  },
-  tabletListItem: {
-    paddingVertical: 16,
   },
   listItemContent: {
     flex: 1,
@@ -1297,111 +786,13 @@ const styles = StyleSheet.create({
     color: '#1E293B',
     marginBottom: 2,
   },
-  tabletListItemTitle: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
   listItemSubtitle: {
     fontSize: 12,
     color: '#64748B',
-  },
-  tabletListItemSubtitle: {
-    fontSize: 14,
   },
   listItemValue: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#059669',
-  },
-  tabletListItemValue: {
-    fontSize: 16,
-  },
-  inventoryValueCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginVertical: 8,
-  },
-  tabletInventoryValueCard: {
-    borderRadius: 20,
-    marginVertical: 12,
-  },
-  inventoryValueGradient: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  tabletInventoryValueGradient: {
-    padding: 32,
-  },
-  inventoryValueAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginVertical: 12,
-  },
-  tabletInventoryValueAmount: {
-    fontSize: 40,
-    marginVertical: 16,
-  },
-  inventoryValueLabel: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '500',
-  },
-  tabletInventoryValueLabel: {
-    fontSize: 18,
-  },
-  newRetailersCard: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 16,
-    padding: 20,
-    marginVertical: 8,
-  },
-  tabletNewRetailersCard: {
-    borderRadius: 20,
-    padding: 24,
-    marginVertical: 12,
-  },
-  newRetailersContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tabletNewRetailersContent: {
-    padding: 8,
-  },
-  newRetailersIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  tabletNewRetailersIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    marginRight: 24,
-  },
-  newRetailersInfo: {
-    flex: 1,
-  },
-  newRetailersCount: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#D97706',
-    marginBottom: 4,
-  },
-  tabletNewRetailersCount: {
-    fontSize: 36,
-    marginBottom: 8,
-  },
-  newRetailersLabel: {
-    fontSize: 14,
-    color: '#92400E',
-    fontWeight: '500',
-  },
-  tabletNewRetailersLabel: {
-    fontSize: 16,
   },
 });
