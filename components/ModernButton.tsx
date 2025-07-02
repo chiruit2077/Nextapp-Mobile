@@ -1,7 +1,8 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, ActivityIndicator, View } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, ActivityIndicator, View, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
+import { isTablet } from '@/hooks/useResponsiveStyles';
 
 interface ModernButtonProps {
   title: string;
@@ -30,6 +31,24 @@ export const ModernButton: React.FC<ModernButtonProps> = ({
 }) => {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
+  const isTabletDevice = isTablet();
+
+  // Platform-specific animation configurations
+  const getSpringConfig = () => {
+    if (Platform.OS === 'ios') {
+      return {
+        damping: 15,
+        stiffness: 150,
+        mass: 0.5,
+      };
+    } else {
+      return {
+        damping: 12,
+        stiffness: 120,
+        mass: 0.6,
+      };
+    }
+  };
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -37,12 +56,12 @@ export const ModernButton: React.FC<ModernButtonProps> = ({
   }));
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.95);
+    scale.value = withSpring(0.95, getSpringConfig());
     opacity.value = withTiming(0.8);
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1);
+    scale.value = withSpring(1, getSpringConfig());
     opacity.value = withTiming(1);
   };
 
@@ -50,6 +69,7 @@ export const ModernButton: React.FC<ModernButtonProps> = ({
     const baseStyle = [
       styles.button,
       styles[size],
+      isTabletDevice && styles[`${size}Tablet`],
       fullWidth && styles.fullWidth,
       disabled && styles.disabled,
     ];
@@ -71,7 +91,11 @@ export const ModernButton: React.FC<ModernButtonProps> = ({
   };
 
   const getTextStyle = () => {
-    const baseStyle = [styles.text, styles[`${size}Text`]];
+    const baseStyle = [
+      styles.text, 
+      styles[`${size}Text`],
+      isTabletDevice && styles[`${size}TabletText`]
+    ];
 
     switch (variant) {
       case 'primary':
@@ -102,15 +126,15 @@ export const ModernButton: React.FC<ModernButtonProps> = ({
           colors={['#667eea', '#764ba2']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.gradient}
+          style={[styles.gradient, isTabletDevice && styles.tabletGradient]}
         >
           <View style={styles.content}>
             {loading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
+              <ActivityIndicator color="#FFFFFF" size={isTabletDevice ? "small" : "small"} />
             ) : (
               <>
                 {icon && <View style={styles.icon}>{icon}</View>}
-                <Text style={[styles.text, styles.primaryText]}>{title}</Text>
+                <Text style={[getTextStyle(), styles.primaryText]}>{title}</Text>
               </>
             )}
           </View>
@@ -132,11 +156,11 @@ export const ModernButton: React.FC<ModernButtonProps> = ({
         {loading ? (
           <ActivityIndicator 
             color={variant === 'primary' || variant === 'danger' ? '#FFFFFF' : '#667eea'} 
-            size="small" 
+            size={isTabletDevice ? "small" : "small"} 
           />
         ) : (
           <>
-            {icon && <View style={styles.icon}>{icon}</View>}
+            {icon && <View style={[styles.icon, isTabletDevice && styles.tabletIcon]}>{icon}</View>}
             <Text style={getTextStyle()}>{title}</Text>
           </>
         )}
@@ -164,15 +188,33 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     minHeight: 40,
   },
+  smallTablet: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    minHeight: 48,
+    borderRadius: 20,
+  },
   medium: {
     paddingHorizontal: 24,
     paddingVertical: 14,
     minHeight: 48,
   },
+  mediumTablet: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    minHeight: 56,
+    borderRadius: 20,
+  },
   large: {
     paddingHorizontal: 32,
     paddingVertical: 18,
     minHeight: 56,
+  },
+  largeTablet: {
+    paddingHorizontal: 40,
+    paddingVertical: 20,
+    minHeight: 64,
+    borderRadius: 24,
   },
   fullWidth: {
     width: '100%',
@@ -201,6 +243,9 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
+  tabletGradient: {
+    borderRadius: 20,
+  },
   disabled: {
     opacity: 0.5,
   },
@@ -213,6 +258,9 @@ const styles = StyleSheet.create({
   icon: {
     marginRight: 8,
   },
+  tabletIcon: {
+    marginRight: 12,
+  },
   text: {
     fontWeight: '600',
     textAlign: 'center',
@@ -220,11 +268,20 @@ const styles = StyleSheet.create({
   smallText: {
     fontSize: 14,
   },
+  smallTabletText: {
+    fontSize: 16,
+  },
   mediumText: {
     fontSize: 16,
   },
+  mediumTabletText: {
+    fontSize: 18,
+  },
   largeText: {
     fontSize: 18,
+  },
+  largeTabletText: {
+    fontSize: 20,
   },
   primaryText: {
     color: '#FFFFFF',

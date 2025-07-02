@@ -8,12 +8,14 @@ import {
   ScrollView,
   SafeAreaView,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { X, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { SlideInDown, SlideOutDown, FadeIn } from 'react-native-reanimated';
+import { isTablet } from '@/hooks/useResponsiveStyles';
 
-const { height } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
 
 interface FilterOption {
   key: string;
@@ -51,6 +53,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   onFilterSelect,
   onSortSelect,
 }) => {
+  const isTabletDevice = isTablet();
+  const isLandscape = width > height;
+
   const handleApply = () => {
     onClose();
   };
@@ -73,50 +78,82 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         <Animated.View 
           entering={SlideInDown.duration(300)} 
           exiting={SlideOutDown.duration(300)}
-          style={styles.filterModal}
+          style={[
+            styles.filterModal,
+            isTabletDevice && styles.tabletFilterModal,
+            isLandscape && styles.landscapeFilterModal
+          ]}
         >
           <SafeAreaView style={styles.modalSafeArea}>
             {/* Modal Header */}
-            <View style={styles.modalHeader}>
+            <View style={[
+              styles.modalHeader,
+              isTabletDevice && styles.tabletModalHeader
+            ]}>
               <View style={styles.modalTitleContainer}>
-                <Text style={styles.modalTitle}>{title}</Text>
+                <Text style={[
+                  styles.modalTitle,
+                  isTabletDevice && styles.tabletModalTitle
+                ]}>
+                  {title}
+                </Text>
               </View>
               <TouchableOpacity 
                 onPress={onClose}
-                style={styles.closeButton}
+                style={[
+                  styles.closeButton,
+                  isTabletDevice && styles.tabletCloseButton
+                ]}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
               >
-                <X size={24} color="#64748b" />
+                <X size={isTabletDevice ? 28 : 24} color="#64748b" />
               </TouchableOpacity>
             </View>
             
             <ScrollView 
               style={styles.modalContent}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.modalScrollContent}
+              contentContainerStyle={[
+                styles.modalScrollContent,
+                isTabletDevice && styles.tabletModalScrollContent
+              ]}
             >
               {/* Filter Section */}
-              <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>Filter Options</Text>
-                <View style={styles.filterGrid}>
+              <View style={[
+                styles.filterSection,
+                isTabletDevice && styles.tabletFilterSection
+              ]}>
+                <Text style={[
+                  styles.filterSectionTitle,
+                  isTabletDevice && styles.tabletFilterSectionTitle
+                ]}>
+                  Filter Options
+                </Text>
+                <View style={[
+                  styles.filterGrid,
+                  isTabletDevice && isLandscape && styles.tabletLandscapeFilterGrid
+                ]}>
                   {filters.map((filter) => (
                     <TouchableOpacity
                       key={filter.key}
                       style={[
                         styles.filterOption,
-                        selectedFilter === filter.key && styles.selectedFilterOption
+                        selectedFilter === filter.key && styles.selectedFilterOption,
+                        isTabletDevice && styles.tabletFilterOption
                       ]}
                       onPress={() => onFilterSelect(filter.key)}
                     >
                       <View style={styles.filterOptionContent}>
                         {filter.icon && (
                           <filter.icon 
-                            size={20} 
+                            size={isTabletDevice ? 24 : 20} 
                             color={selectedFilter === filter.key ? '#667eea' : '#64748b'} 
                           />
                         )}
                         <Text style={[
                           styles.filterOptionText,
-                          selectedFilter === filter.key && styles.selectedFilterOptionText
+                          selectedFilter === filter.key && styles.selectedFilterOptionText,
+                          isTabletDevice && styles.tabletFilterOptionText
                         ]}>
                           {filter.label}
                         </Text>
@@ -128,15 +165,19 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                         ]}>
                           <Text style={[
                             styles.filterCountText,
-                            selectedFilter === filter.key && styles.selectedFilterCountText
+                            selectedFilter === filter.key && styles.selectedFilterCountText,
+                            isTabletDevice && styles.tabletFilterCountText
                           ]}>
                             {filter.count}
                           </Text>
                         </View>
                       )}
                       {selectedFilter === filter.key && (
-                        <View style={styles.selectedIndicator}>
-                          <Check size={16} color="#667eea" />
+                        <View style={[
+                          styles.selectedIndicator,
+                          isTabletDevice && styles.tabletSelectedIndicator
+                        ]}>
+                          <Check size={isTabletDevice ? 20 : 16} color="#667eea" />
                         </View>
                       )}
                     </TouchableOpacity>
@@ -145,33 +186,49 @@ export const FilterModal: React.FC<FilterModalProps> = ({
               </View>
               
               {/* Sort Section */}
-              <View style={styles.sortSection}>
-                <Text style={styles.filterSectionTitle}>Sort Options</Text>
-                <View style={styles.sortGrid}>
+              <View style={[
+                styles.sortSection,
+                isTabletDevice && styles.tabletSortSection
+              ]}>
+                <Text style={[
+                  styles.filterSectionTitle,
+                  isTabletDevice && styles.tabletFilterSectionTitle
+                ]}>
+                  Sort Options
+                </Text>
+                <View style={[
+                  styles.sortGrid,
+                  isTabletDevice && isLandscape && styles.tabletLandscapeSortGrid
+                ]}>
                   {sorts.map((sort) => (
                     <TouchableOpacity
                       key={sort.key}
                       style={[
                         styles.sortOption,
-                        selectedSort === sort.key && styles.selectedSortOption
+                        selectedSort === sort.key && styles.selectedSortOption,
+                        isTabletDevice && styles.tabletSortOption
                       ]}
                       onPress={() => onSortSelect(sort.key)}
                     >
                       {sort.icon && (
                         <sort.icon 
-                          size={18} 
+                          size={isTabletDevice ? 24 : 18} 
                           color={selectedSort === sort.key ? '#667eea' : '#64748b'} 
                         />
                       )}
                       <Text style={[
                         styles.sortOptionText,
-                        selectedSort === sort.key && styles.selectedSortOptionText
+                        selectedSort === sort.key && styles.selectedSortOptionText,
+                        isTabletDevice && styles.tabletSortOptionText
                       ]}>
                         {sort.label}
                       </Text>
                       {selectedSort === sort.key && (
-                        <View style={styles.selectedIndicator}>
-                          <Check size={16} color="#667eea" />
+                        <View style={[
+                          styles.selectedIndicator,
+                          isTabletDevice && styles.tabletSelectedIndicator
+                        ]}>
+                          <Check size={isTabletDevice ? 20 : 16} color="#667eea" />
                         </View>
                       )}
                     </TouchableOpacity>
@@ -181,17 +238,33 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             </ScrollView>
             
             {/* Apply Button */}
-            <View style={styles.modalFooter}>
+            <View style={[
+              styles.modalFooter,
+              isTabletDevice && styles.tabletModalFooter
+            ]}>
               <TouchableOpacity
-                style={styles.applyButton}
+                style={[
+                  styles.applyButton,
+                  isTabletDevice && styles.tabletApplyButton
+                ]}
                 onPress={handleApply}
               >
                 <LinearGradient
                   colors={['#667eea', '#764ba2']}
-                  style={styles.applyGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[
+                    styles.applyGradient,
+                    isTabletDevice && styles.tabletApplyGradient
+                  ]}
                 >
-                  <Check size={20} color="#FFFFFF" />
-                  <Text style={styles.applyButtonText}>Apply Filters</Text>
+                  <Check size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
+                  <Text style={[
+                    styles.applyButtonText,
+                    isTabletDevice && styles.tabletApplyButtonText
+                  ]}>
+                    Apply Filters
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -217,6 +290,16 @@ const styles = StyleSheet.create({
     maxHeight: height * 0.85,
     minHeight: height * 0.5,
   },
+  tabletFilterModal: {
+    maxHeight: height * 0.8,
+    maxWidth: 600,
+    marginHorizontal: 'auto',
+    borderRadius: 24,
+    alignSelf: 'center',
+  },
+  landscapeFilterModal: {
+    maxHeight: height * 0.9,
+  },
   modalSafeArea: {
     flex: 1,
   },
@@ -229,6 +312,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
+  tabletModalHeader: {
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+  },
   modalTitleContainer: {
     flex: 1,
   },
@@ -236,6 +323,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1e293b',
+  },
+  tabletModalTitle: {
+    fontSize: 24,
   },
   closeButton: {
     width: 40,
@@ -245,15 +335,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletCloseButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
   modalContent: {
     flex: 1,
   },
   modalScrollContent: {
     paddingBottom: 20,
   },
+  tabletModalScrollContent: {
+    paddingBottom: 32,
+  },
   filterSection: {
     paddingHorizontal: 24,
     paddingTop: 24,
+  },
+  tabletFilterSection: {
+    paddingHorizontal: 32,
+    paddingTop: 32,
   },
   filterSectionTitle: {
     fontSize: 18,
@@ -261,8 +363,17 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     marginBottom: 16,
   },
+  tabletFilterSectionTitle: {
+    fontSize: 20,
+    marginBottom: 20,
+  },
   filterGrid: {
     gap: 8,
+  },
+  tabletLandscapeFilterGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   filterOption: {
     flexDirection: 'row',
@@ -274,6 +385,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     backgroundColor: '#FFFFFF',
+  },
+  tabletFilterOption: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+    } : {
+      elevation: 2,
+    }),
   },
   selectedFilterOption: {
     backgroundColor: '#ede9fe',
@@ -289,6 +413,10 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginLeft: 12,
     fontWeight: '500',
+  },
+  tabletFilterOptionText: {
+    fontSize: 18,
+    marginLeft: 16,
   },
   selectedFilterOptionText: {
     color: '#667eea',
@@ -311,6 +439,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#64748b',
   },
+  tabletFilterCountText: {
+    fontSize: 14,
+  },
   selectedFilterCountText: {
     color: '#FFFFFF',
   },
@@ -322,12 +453,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletSelectedIndicator: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
   sortSection: {
     paddingHorizontal: 24,
     paddingTop: 32,
   },
+  tabletSortSection: {
+    paddingHorizontal: 32,
+    paddingTop: 40,
+  },
   sortGrid: {
     gap: 8,
+  },
+  tabletLandscapeSortGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   sortOption: {
     flexDirection: 'row',
@@ -338,6 +483,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     backgroundColor: '#FFFFFF',
+  },
+  tabletSortOption: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    ...(Platform.OS === 'ios' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+    } : {
+      elevation: 2,
+    }),
   },
   selectedSortOption: {
     backgroundColor: '#ede9fe',
@@ -350,6 +508,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
+  tabletSortOptionText: {
+    fontSize: 18,
+    marginLeft: 16,
+  },
   selectedSortOptionText: {
     color: '#667eea',
     fontWeight: '600',
@@ -360,9 +522,18 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9',
   },
+  tabletModalFooter: {
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+  },
   applyButton: {
     borderRadius: 16,
     overflow: 'hidden',
+  },
+  tabletApplyButton: {
+    borderRadius: 20,
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   applyGradient: {
     flexDirection: 'row',
@@ -371,9 +542,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     gap: 8,
   },
+  tabletApplyGradient: {
+    paddingVertical: 20,
+    gap: 12,
+  },
   applyButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  tabletApplyButtonText: {
+    fontSize: 20,
   },
 });

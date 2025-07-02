@@ -40,6 +40,8 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import { isTablet } from '@/hooks/useResponsiveStyles';
+import { PlatformSafeAreaView } from '@/components/PlatformSafeAreaView';
 
 const { width, height } = Dimensions.get('window');
 
@@ -103,6 +105,7 @@ export default function CreateOrderScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isTabletDevice = isTablet();
 
   // Order details
   const [poNumber, setPONumber] = useState('');
@@ -402,19 +405,23 @@ export default function CreateOrderScreen() {
     return (
       <View style={styles.stepContainer}>
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Search size={20} color="#94a3b8" />
+        <View style={[styles.searchContainer, isTabletDevice && styles.tabletSearchContainer]}>
+          <View style={[styles.searchBar, isTabletDevice && styles.tabletSearchBar]}>
+            <Search size={isTabletDevice ? 24 : 20} color="#94a3b8" />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, isTabletDevice && styles.tabletSearchInput]}
               placeholder="Search stores..."
               placeholderTextColor="#94a3b8"
               value={searchQuery}
               onChangeText={setSearchQuery}
+              clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <X size={20} color="#94a3b8" />
+            {searchQuery.length > 0 && Platform.OS !== 'ios' && (
+              <TouchableOpacity 
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+              >
+                <X size={isTabletDevice ? 24 : 20} color="#94a3b8" />
               </TouchableOpacity>
             )}
           </View>
@@ -426,39 +433,52 @@ export default function CreateOrderScreen() {
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInUp.delay(index * 100).duration(600)}>
               <TouchableOpacity
-                style={styles.storeCard}
+                style={[styles.storeCard, isTabletDevice && styles.tabletStoreCard]}
                 onPress={() => handleStoreSelect(item)}
                 activeOpacity={0.7}
               >
                 <View style={styles.storeInfo}>
                   <LinearGradient
                     colors={['#10b981', '#059669']}
-                    style={styles.storeIcon}
+                    style={[styles.storeIcon, isTabletDevice && styles.tabletStoreIcon]}
                   >
-                    <Store size={24} color="#FFFFFF" />
+                    <Store size={isTabletDevice ? 32 : 24} color="#FFFFFF" />
                   </LinearGradient>
                   <View style={styles.storeDetails}>
-                    <Text style={styles.storeName}>{item.name || item.Branch_Name}</Text>
-                    <Text style={styles.storeCode}>Branch Code: {item.branchCode || item.Branch_Code}</Text>
+                    <Text style={[styles.storeName, isTabletDevice && styles.tabletStoreName]}>
+                      {item.name || item.Branch_Name}
+                    </Text>
+                    <Text style={[styles.storeCode, isTabletDevice && styles.tabletStoreCode]}>
+                      Branch Code: {item.branchCode || item.Branch_Code}
+                    </Text>
                     {(item.address || item.Branch_Address) && (
-                      <Text style={styles.storeAddress}>{item.address || item.Branch_Address}</Text>
+                      <Text 
+                        style={[styles.storeAddress, isTabletDevice && styles.tabletStoreAddress]}
+                        numberOfLines={2}
+                      >
+                        {item.address || item.Branch_Address}
+                      </Text>
                     )}
                   </View>
-                  <View style={styles.selectButton}>
-                    <Check size={20} color="#10b981" />
+                  <View style={[styles.selectButton, isTabletDevice && styles.tabletSelectButton]}>
+                    <Check size={isTabletDevice ? 24 : 20} color="#10b981" />
                   </View>
                 </View>
               </TouchableOpacity>
             </Animated.View>
           )}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent, 
+            isTabletDevice && styles.tabletListContent,
+            filteredStores.length === 0 && styles.emptyListContent
+          ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>
+            <View style={[styles.emptyState, isTabletDevice && styles.tabletEmptyState]}>
+              <Text style={[styles.emptyTitle, isTabletDevice && styles.tabletEmptyTitle]}>
                 {searchQuery ? 'No stores found' : 'No stores available'}
               </Text>
-              <Text style={styles.emptySubtitle}>
+              <Text style={[styles.emptySubtitle, isTabletDevice && styles.tabletEmptySubtitle]}>
                 {searchQuery ? 'Try adjusting your search terms' : 'Please add stores to continue'}
               </Text>
             </View>
@@ -477,19 +497,23 @@ export default function CreateOrderScreen() {
     return (
       <View style={styles.stepContainer}>
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Search size={20} color="#94a3b8" />
+        <View style={[styles.searchContainer, isTabletDevice && styles.tabletSearchContainer]}>
+          <View style={[styles.searchBar, isTabletDevice && styles.tabletSearchBar]}>
+            <Search size={isTabletDevice ? 24 : 20} color="#94a3b8" />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, isTabletDevice && styles.tabletSearchInput]}
               placeholder="Search retailers..."
               placeholderTextColor="#94a3b8"
               value={searchQuery}
               onChangeText={setSearchQuery}
+              clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <X size={20} color="#94a3b8" />
+            {searchQuery.length > 0 && Platform.OS !== 'ios' && (
+              <TouchableOpacity 
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+              >
+                <X size={isTabletDevice ? 24 : 20} color="#94a3b8" />
               </TouchableOpacity>
             )}
           </View>
@@ -501,41 +525,49 @@ export default function CreateOrderScreen() {
           renderItem={({ item, index }) => (
             <Animated.View entering={FadeInUp.delay(index * 100).duration(600)}>
               <TouchableOpacity
-                style={styles.retailerCard}
+                style={[styles.retailerCard, isTabletDevice && styles.tabletRetailerCard]}
                 onPress={() => handleRetailerSelect(item)}
                 activeOpacity={0.7}
               >
                 <View style={styles.retailerInfo}>
                   <LinearGradient
                     colors={['#667eea', '#764ba2']}
-                    style={styles.retailerIcon}
+                    style={[styles.retailerIcon, isTabletDevice && styles.tabletRetailerIcon]}
                   >
-                    <User size={24} color="#FFFFFF" />
+                    <User size={isTabletDevice ? 32 : 24} color="#FFFFFF" />
                   </LinearGradient>
                   <View style={styles.retailerDetails}>
-                    <Text style={styles.retailerName}>{item.Retailer_Name}</Text>
+                    <Text style={[styles.retailerName, isTabletDevice && styles.tabletRetailerName]}>
+                      {item.Retailer_Name}
+                    </Text>
                     {item.Contact_Person && item.Contact_Person !== '0' && (
-                      <Text style={styles.contactPerson}>{item.Contact_Person}</Text>
+                      <Text style={[styles.contactPerson, isTabletDevice && styles.tabletContactPerson]}>
+                        {item.Contact_Person}
+                      </Text>
                     )}
-                    <Text style={styles.creditLimit}>
+                    <Text style={[styles.creditLimit, isTabletDevice && styles.tabletCreditLimit]}>
                       Credit Limit: {formatCurrency(parseFloat(item.Credit_Limit))}
                     </Text>
                   </View>
-                  <View style={styles.selectButton}>
-                    <Check size={20} color="#667eea" />
+                  <View style={[styles.selectButton, isTabletDevice && styles.tabletSelectButton]}>
+                    <Check size={isTabletDevice ? 24 : 20} color="#667eea" />
                   </View>
                 </View>
               </TouchableOpacity>
             </Animated.View>
           )}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent, 
+            isTabletDevice && styles.tabletListContent,
+            filteredRetailers.length === 0 && styles.emptyListContent
+          ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>
+            <View style={[styles.emptyState, isTabletDevice && styles.tabletEmptyState]}>
+              <Text style={[styles.emptyTitle, isTabletDevice && styles.tabletEmptyTitle]}>
                 {searchQuery ? 'No retailers found' : 'No retailers available'}
               </Text>
-              <Text style={styles.emptySubtitle}>
+              <Text style={[styles.emptySubtitle, isTabletDevice && styles.tabletEmptySubtitle]}>
                 {searchQuery ? 'Try adjusting your search terms' : 'Please add retailers to continue'}
               </Text>
             </View>
@@ -558,19 +590,23 @@ export default function CreateOrderScreen() {
     return (
       <View style={styles.stepContainer}>
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Search size={20} color="#94a3b8" />
+        <View style={[styles.searchContainer, isTabletDevice && styles.tabletSearchContainer]}>
+          <View style={[styles.searchBar, isTabletDevice && styles.tabletSearchBar]}>
+            <Search size={isTabletDevice ? 24 : 20} color="#94a3b8" />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, isTabletDevice && styles.tabletSearchInput]}
               placeholder="Search parts..."
               placeholderTextColor="#94a3b8"
               value={searchQuery}
               onChangeText={setSearchQuery}
+              clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <X size={20} color="#94a3b8" />
+            {searchQuery.length > 0 && Platform.OS !== 'ios' && (
+              <TouchableOpacity 
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+              >
+                <X size={isTabletDevice ? 24 : 20} color="#94a3b8" />
               </TouchableOpacity>
             )}
           </View>
@@ -589,78 +625,99 @@ export default function CreateOrderScreen() {
 
             return (
               <Animated.View entering={FadeInUp.delay(index * 100).duration(600)}>
-                <View style={styles.partCard}>
+                <View style={[styles.partCard, isTabletDevice && styles.tabletPartCard]}>
                   <View style={styles.partHeader}>
-                    <View style={styles.partImageContainer}>
+                    <View style={[styles.partImageContainer, isTabletDevice && styles.tabletPartImageContainer]}>
                       {(item.image || item.Part_Image) ? (
-                        <Image source={{ uri: item.image || item.Part_Image }} style={styles.partImage} />
+                        <Image 
+                          source={{ uri: item.image || item.Part_Image }} 
+                          style={[styles.partImage, isTabletDevice && styles.tabletPartImage]} 
+                        />
                       ) : (
                         <LinearGradient
                           colors={['#667eea', '#764ba2']}
-                          style={styles.partImagePlaceholder}
+                          style={[styles.partImagePlaceholder, isTabletDevice && styles.tabletPartImagePlaceholder]}
                         >
-                          <Package size={28} color="#FFFFFF" />
+                          <Package size={isTabletDevice ? 36 : 28} color="#FFFFFF" />
                         </LinearGradient>
                       )}
                     </View>
                     
                     <View style={styles.partInfo}>
-                      <Text style={styles.partName} numberOfLines={2}>
+                      <Text 
+                        style={[styles.partName, isTabletDevice && styles.tabletPartName]} 
+                        numberOfLines={2}
+                      >
                         {item.name || item.Part_Name}
                       </Text>
-                      <Text style={styles.partNumber}>#{item.partNumber || item.Part_Number}</Text>
+                      <Text style={[styles.partNumber, isTabletDevice && styles.tabletPartNumber]}>
+                        #{item.partNumber || item.Part_Number}
+                      </Text>
                       
                       <View style={styles.categoryContainer}>
-                        <View style={styles.categoryBadge}>
-                          <Text style={styles.categoryText}>{item.category || item.Part_Catagory}</Text>
+                        <View style={[styles.categoryBadge, isTabletDevice && styles.tabletCategoryBadge]}>
+                          <Text style={[styles.categoryText, isTabletDevice && styles.tabletCategoryText]}>
+                            {item.category || item.Part_Catagory}
+                          </Text>
                         </View>
                       </View>
                       
-                      <Text style={styles.partStock}>{Math.floor(Math.random() * 100) + 10} in stock</Text>
+                      <Text style={[styles.partStock, isTabletDevice && styles.tabletPartStock]}>
+                        {Math.floor(Math.random() * 100) + 10} in stock
+                      </Text>
                     </View>
                     
                     <View style={styles.partPrice}>
-                      <Text style={styles.priceText}>{formatCurrency(item.unitPrice || item.Part_Price || 0)}</Text>
+                      <Text style={[styles.priceText, isTabletDevice && styles.tabletPriceText]}>
+                        {formatCurrency(item.unitPrice || item.Part_Price || 0)}
+                      </Text>
                     </View>
                   </View>
 
                   <View style={styles.partActions}>
                     {quantity > 0 ? (
-                      <View style={styles.quantityControls}>
+                      <View style={[styles.quantityControls, isTabletDevice && styles.tabletQuantityControls]}>
                         <TouchableOpacity
-                          style={styles.quantityButton}
+                          style={[styles.quantityButton, isTabletDevice && styles.tabletQuantityButton]}
                           onPress={() => updateQuantity(partNumber, quantity - 1)}
+                          hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                         >
-                          <Minus size={16} color="#667eea" />
+                          <Minus size={isTabletDevice ? 20 : 16} color="#667eea" />
                         </TouchableOpacity>
                         
-                        <Text style={styles.quantityText}>{quantity}</Text>
+                        <Text style={[styles.quantityText, isTabletDevice && styles.tabletQuantityText]}>
+                          {quantity}
+                        </Text>
                         
                         <TouchableOpacity
-                          style={styles.quantityButton}
+                          style={[styles.quantityButton, isTabletDevice && styles.tabletQuantityButton]}
                           onPress={() => updateQuantity(partNumber, quantity + 1)}
+                          hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                         >
-                          <Plus size={16} color="#667eea" />
+                          <Plus size={isTabletDevice ? 20 : 16} color="#667eea" />
                         </TouchableOpacity>
                         
                         <TouchableOpacity
-                          style={styles.removeButton}
+                          style={[styles.removeButton, isTabletDevice && styles.tabletRemoveButton]}
                           onPress={() => removeFromOrder(partNumber)}
+                          hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                         >
-                          <Trash2 size={16} color="#ef4444" />
+                          <Trash2 size={isTabletDevice ? 20 : 16} color="#ef4444" />
                         </TouchableOpacity>
                       </View>
                     ) : (
                       <TouchableOpacity
-                        style={styles.addButton}
+                        style={[styles.addButton, isTabletDevice && styles.tabletAddButton]}
                         onPress={() => addToOrder(item)}
                       >
                         <LinearGradient
                           colors={['#667eea', '#764ba2']}
-                          style={styles.addButtonGradient}
+                          style={[styles.addButtonGradient, isTabletDevice && styles.tabletAddButtonGradient]}
                         >
-                          <Plus size={16} color="#FFFFFF" />
-                          <Text style={styles.addButtonText}>Add to Order</Text>
+                          <Plus size={isTabletDevice ? 20 : 16} color="#FFFFFF" />
+                          <Text style={[styles.addButtonText, isTabletDevice && styles.tabletAddButtonText]}>
+                            Add to Order
+                          </Text>
                         </LinearGradient>
                       </TouchableOpacity>
                     )}
@@ -669,14 +726,18 @@ export default function CreateOrderScreen() {
               </Animated.View>
             );
           }}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent, 
+            isTabletDevice && styles.tabletListContent,
+            filteredParts.length === 0 && styles.emptyListContent
+          ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>
+            <View style={[styles.emptyState, isTabletDevice && styles.tabletEmptyState]}>
+              <Text style={[styles.emptyTitle, isTabletDevice && styles.tabletEmptyTitle]}>
                 {searchQuery ? 'No parts found' : 'No parts available'}
               </Text>
-              <Text style={styles.emptySubtitle}>
+              <Text style={[styles.emptySubtitle, isTabletDevice && styles.tabletEmptySubtitle]}>
                 {searchQuery ? 'Try adjusting your search terms' : 'Parts will appear here once added'}
               </Text>
             </View>
@@ -684,24 +745,34 @@ export default function CreateOrderScreen() {
         />
 
         {orderItems.length > 0 && (
-          <View style={styles.orderSummary}>
-            <View style={styles.summaryCard}>
+          <View style={[
+            styles.orderSummary, 
+            isTabletDevice && styles.tabletOrderSummary,
+            Platform.OS === 'ios' && styles.iosOrderSummary
+          ]}>
+            <View style={[styles.summaryCard, isTabletDevice && styles.tabletSummaryCard]}>
               <View style={styles.summaryHeader}>
-                <Text style={styles.summaryTitle}>Order Summary</Text>
-                <Text style={styles.summaryTotal}>{formatCurrency(getOrderTotal())}</Text>
+                <Text style={[styles.summaryTitle, isTabletDevice && styles.tabletSummaryTitle]}>
+                  Order Summary
+                </Text>
+                <Text style={[styles.summaryTotal, isTabletDevice && styles.tabletSummaryTotal]}>
+                  {formatCurrency(getOrderTotal())}
+                </Text>
               </View>
-              <Text style={styles.summaryItems}>
+              <Text style={[styles.summaryItems, isTabletDevice && styles.tabletSummaryItems]}>
                 {orderItems.length} item{orderItems.length !== 1 ? 's' : ''} • {orderItems.reduce((sum, item) => sum + item.quantity, 0)} total quantity
               </Text>
               <TouchableOpacity
-                style={styles.reviewButton}
+                style={[styles.reviewButton, isTabletDevice && styles.tabletReviewButton]}
                 onPress={() => setStep('review')}
               >
                 <LinearGradient
                   colors={['#667eea', '#764ba2']}
-                  style={styles.reviewButtonGradient}
+                  style={[styles.reviewButtonGradient, isTabletDevice && styles.tabletReviewButtonGradient]}
                 >
-                  <Text style={styles.reviewButtonText}>Review Order</Text>
+                  <Text style={[styles.reviewButtonText, isTabletDevice && styles.tabletReviewButtonText]}>
+                    Review Order
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -718,23 +789,40 @@ export default function CreateOrderScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
       >
-        <ScrollView style={styles.stepContainer} contentContainerStyle={styles.reviewContent}>
+        <ScrollView 
+          style={styles.stepContainer} 
+          contentContainerStyle={[
+            styles.reviewContent,
+            isTabletDevice && styles.tabletReviewContent
+          ]}
+        >
           {/* Store Info */}
           <Animated.View entering={FadeInUp.delay(0).duration(600)}>
-            <View style={styles.reviewCard}>
-              <Text style={styles.reviewSectionTitle}>Store</Text>
+            <View style={[styles.reviewCard, isTabletDevice && styles.tabletReviewCard]}>
+              <Text style={[styles.reviewSectionTitle, isTabletDevice && styles.tabletReviewSectionTitle]}>
+                Store
+              </Text>
               <View style={styles.storeReview}>
                 <LinearGradient
                   colors={['#10b981', '#059669']}
-                  style={styles.storeIcon}
+                  style={[styles.storeIcon, isTabletDevice && styles.tabletStoreIcon]}
                 >
-                  <Store size={24} color="#FFFFFF" />
+                  <Store size={isTabletDevice ? 32 : 24} color="#FFFFFF" />
                 </LinearGradient>
                 <View style={styles.storeDetails}>
-                  <Text style={styles.storeName}>{selectedStore?.name || selectedStore?.Branch_Name}</Text>
-                  <Text style={styles.storeCode}>Branch Code: {selectedStore?.branchCode || selectedStore?.Branch_Code}</Text>
+                  <Text style={[styles.storeName, isTabletDevice && styles.tabletStoreName]}>
+                    {selectedStore?.name || selectedStore?.Branch_Name}
+                  </Text>
+                  <Text style={[styles.storeCode, isTabletDevice && styles.tabletStoreCode]}>
+                    Branch Code: {selectedStore?.branchCode || selectedStore?.Branch_Code}
+                  </Text>
                   {(selectedStore?.address || selectedStore?.Branch_Address) && (
-                    <Text style={styles.storeAddress}>{selectedStore?.address || selectedStore?.Branch_Address}</Text>
+                    <Text 
+                      style={[styles.storeAddress, isTabletDevice && styles.tabletStoreAddress]}
+                      numberOfLines={2}
+                    >
+                      {selectedStore?.address || selectedStore?.Branch_Address}
+                    </Text>
                   )}
                 </View>
               </View>
@@ -743,19 +831,25 @@ export default function CreateOrderScreen() {
 
           {/* Retailer Info */}
           <Animated.View entering={FadeInUp.delay(100).duration(600)}>
-            <View style={styles.reviewCard}>
-              <Text style={styles.reviewSectionTitle}>Customer</Text>
+            <View style={[styles.reviewCard, isTabletDevice && styles.tabletReviewCard]}>
+              <Text style={[styles.reviewSectionTitle, isTabletDevice && styles.tabletReviewSectionTitle]}>
+                Customer
+              </Text>
               <View style={styles.retailerReview}>
                 <LinearGradient
                   colors={['#667eea', '#764ba2']}
-                  style={styles.retailerIcon}
+                  style={[styles.retailerIcon, isTabletDevice && styles.tabletRetailerIcon]}
                 >
-                  <User size={24} color="#FFFFFF" />
+                  <User size={isTabletDevice ? 32 : 24} color="#FFFFFF" />
                 </LinearGradient>
                 <View style={styles.retailerDetails}>
-                  <Text style={styles.retailerName}>{selectedRetailer?.Retailer_Name}</Text>
+                  <Text style={[styles.retailerName, isTabletDevice && styles.tabletRetailerName]}>
+                    {selectedRetailer?.Retailer_Name}
+                  </Text>
                   {selectedRetailer?.Contact_Person && selectedRetailer.Contact_Person !== '0' && (
-                    <Text style={styles.contactPerson}>{selectedRetailer.Contact_Person}</Text>
+                    <Text style={[styles.contactPerson, isTabletDevice && styles.tabletContactPerson]}>
+                      {selectedRetailer.Contact_Person}
+                    </Text>
                   )}
                 </View>
               </View>
@@ -764,23 +858,33 @@ export default function CreateOrderScreen() {
 
           {/* Order Details */}
           <Animated.View entering={FadeInUp.delay(200).duration(600)}>
-            <View style={styles.reviewCard}>
-              <Text style={styles.reviewSectionTitle}>Order Details</Text>
+            <View style={[styles.reviewCard, isTabletDevice && styles.tabletReviewCard]}>
+              <Text style={[styles.reviewSectionTitle, isTabletDevice && styles.tabletReviewSectionTitle]}>
+                Order Details
+              </Text>
               
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>PO Number</Text>
+              <View style={[styles.inputGroup, isTabletDevice && styles.tabletInputGroup]}>
+                <Text style={[styles.inputLabel, isTabletDevice && styles.tabletInputLabel]}>
+                  PO Number
+                </Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, isTabletDevice && styles.tabletTextInput]}
                   placeholder="Enter PO number (optional)"
                   value={poNumber}
                   onChangeText={setPONumber}
                 />
               </View>
               
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Notes</Text>
+              <View style={[styles.inputGroup, isTabletDevice && styles.tabletInputGroup]}>
+                <Text style={[styles.inputLabel, isTabletDevice && styles.tabletInputLabel]}>
+                  Notes
+                </Text>
                 <TextInput
-                  style={styles.textAreaInput}
+                  style={[
+                    styles.textAreaInput, 
+                    isTabletDevice && styles.tabletTextAreaInput,
+                    Platform.OS === 'ios' && styles.iosTextAreaInput
+                  ]}
                   placeholder="Add any notes for this order..."
                   value={notes}
                   onChangeText={setNotes}
@@ -790,13 +894,23 @@ export default function CreateOrderScreen() {
                 />
               </View>
               
-              <View style={styles.urgentContainer}>
-                <Text style={styles.urgentLabel}>Mark as Urgent</Text>
+              <View style={[styles.urgentContainer, isTabletDevice && styles.tabletUrgentContainer]}>
+                <Text style={[styles.urgentLabel, isTabletDevice && styles.tabletUrgentLabel]}>
+                  Mark as Urgent
+                </Text>
                 <TouchableOpacity
-                  style={[styles.urgentToggle, isUrgent && styles.urgentToggleActive]}
+                  style={[
+                    styles.urgentToggle, 
+                    isUrgent && styles.urgentToggleActive,
+                    isTabletDevice && styles.tabletUrgentToggle
+                  ]}
                   onPress={() => setIsUrgent(!isUrgent)}
                 >
-                  <Text style={[styles.urgentToggleText, isUrgent && styles.urgentToggleTextActive]}>
+                  <Text style={[
+                    styles.urgentToggleText, 
+                    isUrgent && styles.urgentToggleTextActive,
+                    isTabletDevice && styles.tabletUrgentToggleText
+                  ]}>
                     {isUrgent ? 'Yes' : 'No'}
                   </Text>
                 </TouchableOpacity>
@@ -806,17 +920,30 @@ export default function CreateOrderScreen() {
 
           {/* Order Items */}
           <Animated.View entering={FadeInUp.delay(300).duration(600)}>
-            <View style={styles.reviewCard}>
-              <Text style={styles.reviewSectionTitle}>Order Items</Text>
+            <View style={[styles.reviewCard, isTabletDevice && styles.tabletReviewCard]}>
+              <Text style={[styles.reviewSectionTitle, isTabletDevice && styles.tabletReviewSectionTitle]}>
+                Order Items
+              </Text>
               {orderItems.map((item, index) => (
-                <View key={item.part.partNumber || item.part.Part_Number || index} style={styles.reviewItem}>
+                <View 
+                  key={item.part.partNumber || item.part.Part_Number || index} 
+                  style={[styles.reviewItem, isTabletDevice && styles.tabletReviewItem]}
+                >
                   <View style={styles.reviewItemInfo}>
-                    <Text style={styles.reviewItemName}>{item.part.name || item.part.Part_Name}</Text>
-                    <Text style={styles.reviewItemNumber}>#{item.part.partNumber || item.part.Part_Number}</Text>
+                    <Text style={[styles.reviewItemName, isTabletDevice && styles.tabletReviewItemName]}>
+                      {item.part.name || item.part.Part_Name}
+                    </Text>
+                    <Text style={[styles.reviewItemNumber, isTabletDevice && styles.tabletReviewItemNumber]}>
+                      #{item.part.partNumber || item.part.Part_Number}
+                    </Text>
                   </View>
                   <View style={styles.reviewItemQuantity}>
-                    <Text style={styles.quantityLabel}>Qty: {item.quantity}</Text>
-                    <Text style={styles.reviewItemPrice}>{formatCurrency(item.totalPrice)}</Text>
+                    <Text style={[styles.quantityLabel, isTabletDevice && styles.tabletQuantityLabel]}>
+                      Qty: {item.quantity}
+                    </Text>
+                    <Text style={[styles.reviewItemPrice, isTabletDevice && styles.tabletReviewItemPrice]}>
+                      {formatCurrency(item.totalPrice)}
+                    </Text>
                   </View>
                 </View>
               ))}
@@ -825,16 +952,20 @@ export default function CreateOrderScreen() {
 
           {/* Order Total */}
           <Animated.View entering={FadeInUp.delay(400).duration(600)}>
-            <View style={styles.totalCard}>
+            <View style={[styles.totalCard, isTabletDevice && styles.tabletTotalCard]}>
               <LinearGradient
                 colors={['#667eea', '#764ba2']}
-                style={styles.totalGradient}
+                style={[styles.totalGradient, isTabletDevice && styles.tabletTotalGradient]}
               >
                 <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>Order Total</Text>
-                  <Text style={styles.totalAmount}>{formatCurrency(getOrderTotal())}</Text>
+                  <Text style={[styles.totalLabel, isTabletDevice && styles.tabletTotalLabel]}>
+                    Order Total
+                  </Text>
+                  <Text style={[styles.totalAmount, isTabletDevice && styles.tabletTotalAmount]}>
+                    {formatCurrency(getOrderTotal())}
+                  </Text>
                 </View>
-                <Text style={styles.totalItems}>
+                <Text style={[styles.totalItems, isTabletDevice && styles.tabletTotalItems]}>
                   {orderItems.length} item{orderItems.length !== 1 ? 's' : ''} • {orderItems.reduce((sum, item) => sum + item.quantity, 0)} total quantity
                 </Text>
               </LinearGradient>
@@ -844,20 +975,22 @@ export default function CreateOrderScreen() {
           {/* Submit Button */}
           <Animated.View entering={FadeInUp.delay(500).duration(600)}>
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[styles.submitButton, isTabletDevice && styles.tabletSubmitButton]}
               onPress={handleSubmitOrder}
               disabled={isSubmitting}
             >
               <LinearGradient
                 colors={['#10b981', '#059669']}
-                style={styles.submitGradient}
+                style={[styles.submitGradient, isTabletDevice && styles.tabletSubmitGradient]}
               >
                 {isSubmitting ? (
                   <LoadingSpinner size="small" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Save size={20} color="#FFFFFF" />
-                    <Text style={styles.submitButtonText}>Place Order</Text>
+                    <Save size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
+                    <Text style={[styles.submitButtonText, isTabletDevice && styles.tabletSubmitButtonText]}>
+                      Place Order
+                    </Text>
                   </>
                 )}
               </LinearGradient>
@@ -865,7 +998,7 @@ export default function CreateOrderScreen() {
           </Animated.View>
           
           {/* Extra padding to ensure content is visible above tab bar */}
-          <View style={{ height: 120 }} />
+          <View style={{ height: Platform.OS === 'ios' ? 140 : 120 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     );
@@ -910,43 +1043,49 @@ export default function CreateOrderScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <PlatformSafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <LinearGradient
           colors={['#667eea', '#764ba2']}
-          style={styles.headerGradient}
+          style={[styles.headerGradient, isTabletDevice && styles.tabletHeaderGradient]}
         >
           <View style={styles.headerContent}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={[styles.backButton, isTabletDevice && styles.tabletBackButton]}
               onPress={handleBackPress}
+              hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
-              <ArrowLeft size={24} color="#FFFFFF" />
+              <ArrowLeft size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
             </TouchableOpacity>
             
             <View style={styles.headerTitle}>
-              <Text style={styles.headerTitleText}>{getStepTitle()}</Text>
-              <Text style={styles.headerSubtitle}>{getStepSubtitle()}</Text>
+              <Text style={[styles.headerTitleText, isTabletDevice && styles.tabletHeaderTitleText]}>
+                {getStepTitle()}
+              </Text>
+              <Text style={[styles.headerSubtitle, isTabletDevice && styles.tabletHeaderSubtitle]}>
+                {getStepSubtitle()}
+              </Text>
             </View>
             
             {step === 'parts' && (
               <TouchableOpacity
-                style={styles.headerActionButton}
+                style={[styles.headerActionButton, isTabletDevice && styles.tabletHeaderActionButton]}
                 onPress={() => router.push('/(tabs)/parts/add')}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
               >
-                <Plus size={24} color="#FFFFFF" />
+                <Plus size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
               </TouchableOpacity>
             )}
             {step !== 'parts' && (
-              <View style={styles.headerSpacer} />
+              <View style={[styles.headerSpacer, isTabletDevice && styles.tabletHeaderSpacer]} />
             )}
           </View>
         </LinearGradient>
       </View>
 
       {/* Step Indicator */}
-      <View style={styles.stepIndicator}>
+      <View style={[styles.stepIndicator, isTabletDevice && styles.tabletStepIndicator]}>
         <View style={styles.stepIndicatorContainer}>
           {['store', 'retailer', 'parts', 'review'].map((stepName, index) => {
             // Skip store step for non-admin users
@@ -962,7 +1101,8 @@ export default function CreateOrderScreen() {
                   ((step === 'retailer' && stepName === 'store') ||
                    (step === 'parts' && (stepName === 'store' || stepName === 'retailer')) ||
                    (step === 'review' && (stepName === 'store' || stepName === 'retailer' || stepName === 'parts')))
-                    ? styles.stepDotCompleted : {}
+                    ? styles.stepDotCompleted : {},
+                  isTabletDevice && styles.tabletStepDot
                 ]}>
                   <Text style={[
                     styles.stepDotText,
@@ -970,7 +1110,8 @@ export default function CreateOrderScreen() {
                      (step === 'retailer' && stepName === 'store') ||
                      (step === 'parts' && (stepName === 'store' || stepName === 'retailer')) ||
                      (step === 'review' && (stepName === 'store' || stepName === 'retailer' || stepName === 'parts')))
-                      && styles.stepDotTextActive
+                      && styles.stepDotTextActive,
+                    isTabletDevice && styles.tabletStepDotText
                   ]}>
                     {index + 1}
                   </Text>
@@ -983,7 +1124,8 @@ export default function CreateOrderScreen() {
                      (step === 'parts' && stepName === 'store') ||
                      (step === 'review' && stepName === 'store') ||
                      (step === 'review' && stepName === 'retailer') ||
-                     (step === 'review' && stepName === 'parts')) && styles.stepLineCompleted
+                     (step === 'review' && stepName === 'parts')) && styles.stepLineCompleted,
+                    isTabletDevice && styles.tabletStepLine
                   ]} />
                 )}
               </View>
@@ -997,7 +1139,7 @@ export default function CreateOrderScreen() {
       {step === 'retailer' && renderRetailerStep()}
       {step === 'parts' && renderPartsStep()}
       {step === 'review' && renderReviewStep()}
-    </SafeAreaView>
+    </PlatformSafeAreaView>
   );
 }
 
@@ -1012,7 +1154,12 @@ const styles = StyleSheet.create({
   headerGradient: {
     paddingHorizontal: 20,
     paddingBottom: 20,
-    paddingTop: Platform.OS === 'ios' ? 10 : 50,
+    paddingTop: Platform.OS === 'ios' ? 10 : 20,
+  },
+  tabletHeaderGradient: {
+    paddingHorizontal: 32,
+    paddingBottom: 28,
+    paddingTop: Platform.OS === 'ios' ? 16 : 28,
   },
   headerContent: {
     flexDirection: 'row',
@@ -1027,6 +1174,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletBackButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
   headerTitle: {
     flex: 1,
     alignItems: 'center',
@@ -1036,12 +1188,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
+  tabletHeaderTitleText: {
+    fontSize: 28,
+  },
   headerSubtitle: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
   },
+  tabletHeaderSubtitle: {
+    fontSize: 16,
+  },
   headerSpacer: {
     width: 44,
+  },
+  tabletHeaderSpacer: {
+    width: 56,
   },
   headerActionButton: {
     width: 44,
@@ -1051,12 +1212,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletHeaderActionButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
   stepIndicator: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 20,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
+  },
+  tabletStepIndicator: {
+    paddingVertical: 24,
+    paddingHorizontal: 32,
   },
   stepIndicatorContainer: {
     flexDirection: 'row',
@@ -1075,6 +1245,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletStepDot: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
   stepDotActive: {
     backgroundColor: '#667eea',
   },
@@ -1086,6 +1261,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#64748b',
   },
+  tabletStepDotText: {
+    fontSize: 16,
+  },
   stepDotTextActive: {
     color: '#FFFFFF',
   },
@@ -1094,6 +1272,11 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: '#e2e8f0',
     marginHorizontal: 8,
+  },
+  tabletStepLine: {
+    width: 60,
+    height: 3,
+    marginHorizontal: 12,
   },
   stepLineCompleted: {
     backgroundColor: '#10b981',
@@ -1104,6 +1287,10 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 20,
     paddingVertical: 16,
+  },
+  tabletSearchContainer: {
+    paddingHorizontal: 32,
+    paddingVertical: 20,
   },
   searchBar: {
     flexDirection: 'row',
@@ -1123,19 +1310,37 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  tabletSearchBar: {
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    height: 60,
+  },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: '#1e293b',
     marginLeft: 12,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+  },
+  tabletSearchInput: {
+    fontSize: 18,
+    marginLeft: 16,
   },
   listContent: {
     paddingBottom: 180, // Increased to ensure content is visible above the order summary
+    paddingHorizontal: 20,
+  },
+  tabletListContent: {
+    paddingBottom: 200,
+    paddingHorizontal: 32,
+  },
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   retailerCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    marginHorizontal: 20,
     marginVertical: 8,
     padding: 20,
     shadowColor: '#000',
@@ -1146,6 +1351,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
+  },
+  tabletRetailerCard: {
+    borderRadius: 20,
+    marginVertical: 12,
+    padding: 24,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
   },
   retailerInfo: {
     flexDirection: 'row',
@@ -1159,6 +1376,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 16,
   },
+  tabletRetailerIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginRight: 20,
+  },
   retailerDetails: {
     flex: 1,
   },
@@ -1168,15 +1391,26 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     marginBottom: 4,
   },
+  tabletRetailerName: {
+    fontSize: 22,
+    marginBottom: 6,
+  },
   contactPerson: {
     fontSize: 14,
     color: '#64748b',
     marginBottom: 4,
   },
+  tabletContactPerson: {
+    fontSize: 16,
+    marginBottom: 6,
+  },
   creditLimit: {
     fontSize: 12,
     color: '#059669',
     fontWeight: '600',
+  },
+  tabletCreditLimit: {
+    fontSize: 14,
   },
   selectButton: {
     width: 40,
@@ -1186,10 +1420,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletSelectButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
   storeCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    marginHorizontal: 20,
     marginVertical: 8,
     padding: 20,
     shadowColor: '#000',
@@ -1200,6 +1438,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
+  },
+  tabletStoreCard: {
+    borderRadius: 20,
+    marginVertical: 12,
+    padding: 24,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
   },
   storeInfo: {
     flexDirection: 'row',
@@ -1213,6 +1463,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 16,
   },
+  tabletStoreIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginRight: 20,
+  },
   storeDetails: {
     flex: 1,
   },
@@ -1222,19 +1478,29 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     marginBottom: 4,
   },
+  tabletStoreName: {
+    fontSize: 22,
+    marginBottom: 6,
+  },
   storeCode: {
     fontSize: 14,
     color: '#64748b',
     marginBottom: 4,
   },
+  tabletStoreCode: {
+    fontSize: 16,
+    marginBottom: 6,
+  },
   storeAddress: {
     fontSize: 12,
     color: '#94a3b8',
   },
+  tabletStoreAddress: {
+    fontSize: 14,
+  },
   partCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    marginHorizontal: 20,
     marginVertical: 8,
     padding: 20,
     shadowColor: '#000',
@@ -1246,6 +1512,18 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  tabletPartCard: {
+    borderRadius: 20,
+    marginVertical: 12,
+    padding: 24,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
+  },
   partHeader: {
     flexDirection: 'row',
     marginBottom: 16,
@@ -1253,10 +1531,18 @@ const styles = StyleSheet.create({
   partImageContainer: {
     marginRight: 16,
   },
+  tabletPartImageContainer: {
+    marginRight: 20,
+  },
   partImage: {
     width: 60,
     height: 60,
     borderRadius: 12,
+  },
+  tabletPartImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
   },
   partImagePlaceholder: {
     width: 60,
@@ -1264,6 +1550,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabletPartImagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
   },
   partInfo: {
     flex: 1,
@@ -1275,18 +1566,31 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     marginBottom: 4,
   },
+  tabletPartName: {
+    fontSize: 20,
+    marginBottom: 6,
+  },
   partNumber: {
     fontSize: 12,
     color: '#64748b',
+  },
+  tabletPartNumber: {
+    fontSize: 14,
   },
   partCategory: {
     fontSize: 12,
     color: '#667eea',
     fontWeight: '600',
   },
+  tabletPartCategory: {
+    fontSize: 14,
+  },
   partStock: {
     fontSize: 11,
     color: '#94a3b8',
+  },
+  tabletPartStock: {
+    fontSize: 13,
   },
   partPrice: {
     justifyContent: 'center',
@@ -1297,6 +1601,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#059669',
   },
+  tabletPriceText: {
+    fontSize: 22,
+  },
   partActions: {
     alignItems: 'flex-end',
   },
@@ -1304,6 +1611,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  tabletQuantityControls: {
+    gap: 16,
   },
   quantityButton: {
     width: 32,
@@ -1313,12 +1623,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletQuantityButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
   quantityText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1e293b',
     minWidth: 30,
     textAlign: 'center',
+  },
+  tabletQuantityText: {
+    fontSize: 20,
+    minWidth: 40,
   },
   removeButton: {
     width: 32,
@@ -1328,9 +1647,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletRemoveButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
   addButton: {
     borderRadius: 12,
     overflow: 'hidden',
+  },
+  tabletAddButton: {
+    borderRadius: 16,
   },
   addButtonGradient: {
     flexDirection: 'row',
@@ -1339,10 +1666,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 6,
   },
+  tabletAddButtonGradient: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 8,
+  },
   addButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  tabletAddButtonText: {
+    fontSize: 16,
   },
   orderSummary: {
     position: 'absolute',
@@ -1353,6 +1688,13 @@ const styles = StyleSheet.create({
     marginBottom: 80, // Adjust based on toolbar height
     backgroundColor: 'transparent',
     zIndex: 100
+  },
+  tabletOrderSummary: {
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    marginBottom: 100,
+  },
+  iosOrderSummary: {
+    paddingBottom: 20, // iOS already has SafeAreaView
   },
   summaryCard: {
     margin: 16,
@@ -1368,6 +1710,20 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  tabletSummaryCard: {
+    margin: 24,
+    padding: 20,
+    borderRadius: 16,
+    maxWidth: 600,
+    alignSelf: 'center',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
   summaryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1379,36 +1735,62 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1e293b',
   },
+  tabletSummaryTitle: {
+    fontSize: 22,
+  },
   summaryTotal: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#059669',
+  },
+  tabletSummaryTotal: {
+    fontSize: 24,
   },
   summaryItems: {
     fontSize: 14,
     color: '#64748b',
     marginBottom: 16,
   },
+  tabletSummaryItems: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
   reviewButton: {
     borderRadius: 12,
     overflow: 'hidden',
   },
+  tabletReviewButton: {
+    borderRadius: 16,
+  },
   reviewButtonGradient: {
     paddingVertical: 14,
     alignItems: 'center',
+  },
+  tabletReviewButtonGradient: {
+    paddingVertical: 16,
   },
   reviewButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
+  tabletReviewButtonText: {
+    fontSize: 18,
+  },
   reviewContent: {
+    paddingHorizontal: 20,
     paddingBottom: 120,
+  },
+  tabletReviewContent: {
+    paddingHorizontal: 32,
+    paddingBottom: 140,
+    maxWidth: 800,
+    alignSelf: 'center',
+    width: '100%',
   },
   reviewCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    marginHorizontal: 20,
     marginVertical: 8,
     padding: 20,
     shadowColor: '#000',
@@ -1420,11 +1802,27 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  tabletReviewCard: {
+    borderRadius: 20,
+    marginVertical: 12,
+    padding: 24,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
+  },
   reviewSectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1e293b',
     marginBottom: 16,
+  },
+  tabletReviewSectionTitle: {
+    fontSize: 22,
+    marginBottom: 20,
   },
   retailerReview: {
     flexDirection: 'row',
@@ -1437,11 +1835,18 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 16,
   },
+  tabletInputGroup: {
+    marginBottom: 20,
+  },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
+  },
+  tabletInputLabel: {
+    fontSize: 16,
+    marginBottom: 10,
   },
   textInput: {
     borderWidth: 1,
@@ -1452,6 +1857,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1e293b',
   },
+  tabletTextInput: {
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    fontSize: 18,
+  },
   textAreaInput: {
     borderWidth: 1,
     borderColor: '#e2e8f0',
@@ -1461,16 +1872,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1e293b',
     minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  tabletTextAreaInput: {
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    fontSize: 18,
+    minHeight: 100,
+  },
+  iosTextAreaInput: {
+    paddingTop: 12, // iOS needs explicit padding for multiline inputs
   },
   urgentContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  tabletUrgentContainer: {
+    marginTop: 8,
+  },
   urgentLabel: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1e293b',
+  },
+  tabletUrgentLabel: {
+    fontSize: 18,
   },
   urgentToggle: {
     paddingHorizontal: 16,
@@ -1480,6 +1908,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
+  tabletUrgentToggle: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 16,
+  },
   urgentToggleActive: {
     backgroundColor: '#fee2e2',
     borderColor: '#ef4444',
@@ -1488,6 +1921,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#64748b',
+  },
+  tabletUrgentToggleText: {
+    fontSize: 16,
   },
   urgentToggleTextActive: {
     color: '#ef4444',
@@ -1500,6 +1936,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
+  tabletReviewItem: {
+    paddingVertical: 16,
+  },
   reviewItemInfo: {
     flex: 1,
   },
@@ -1509,9 +1948,16 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     marginBottom: 4,
   },
+  tabletReviewItemName: {
+    fontSize: 18,
+    marginBottom: 6,
+  },
   reviewItemNumber: {
     fontSize: 12,
     color: '#64748b',
+  },
+  tabletReviewItemNumber: {
+    fontSize: 14,
   },
   reviewItemQuantity: {
     alignItems: 'flex-end',
@@ -1521,13 +1967,19 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginBottom: 4,
   },
+  tabletQuantityLabel: {
+    fontSize: 14,
+    marginBottom: 6,
+  },
   reviewItemPrice: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#059669',
   },
+  tabletReviewItemPrice: {
+    fontSize: 18,
+  },
   totalCard: {
-    marginHorizontal: 20,
     marginVertical: 8,
     borderRadius: 16,
     overflow: 'hidden',
@@ -1540,8 +1992,22 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
+  tabletTotalCard: {
+    marginVertical: 12,
+    borderRadius: 20,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
+  },
   totalGradient: {
     padding: 20,
+  },
+  tabletTotalGradient: {
+    padding: 24,
   },
   totalRow: {
     flexDirection: 'row',
@@ -1554,21 +2020,36 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
+  tabletTotalLabel: {
+    fontSize: 24,
+  },
   totalAmount: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
+  tabletTotalAmount: {
+    fontSize: 28,
+  },
   totalItems: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
   },
+  tabletTotalItems: {
+    fontSize: 16,
+  },
   submitButton: {
-    marginHorizontal: 20,
     marginTop: 16,
     marginBottom: 40,
     borderRadius: 16,
     overflow: 'hidden',
+  },
+  tabletSubmitButton: {
+    marginTop: 24,
+    marginBottom: 60,
+    borderRadius: 20,
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   submitGradient: {
     flexDirection: 'row',
@@ -1577,16 +2058,27 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     gap: 8,
   },
+  tabletSubmitGradient: {
+    paddingVertical: 20,
+    gap: 12,
+  },
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  tabletSubmitButtonText: {
+    fontSize: 20,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
     paddingHorizontal: 20,
+  },
+  tabletEmptyState: {
+    paddingVertical: 80,
+    paddingHorizontal: 40,
   },
   emptyTitle: {
     fontSize: 20,
@@ -1595,11 +2087,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
+  tabletEmptyTitle: {
+    fontSize: 24,
+    marginBottom: 12,
+  },
   emptySubtitle: {
     fontSize: 16,
     color: '#64748b',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  tabletEmptySubtitle: {
+    fontSize: 18,
+    lineHeight: 28,
+    maxWidth: 500,
   },
   categoryContainer: {
     flexDirection: 'row',
@@ -1614,9 +2115,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
+  tabletCategoryBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
   categoryText: {
     fontSize: 12,
     color: '#667eea',
     fontWeight: '600',
+  },
+  tabletCategoryText: {
+    fontSize: 14,
   },
 });
