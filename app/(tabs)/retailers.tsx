@@ -10,6 +10,8 @@ import {
   Alert,
   TextInput,
   TouchableOpacity,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { ModernButton } from '@/components/ModernButtonUnified';
 import { apiService } from '@/services/api';
@@ -39,6 +41,8 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { isTablet } from '@/hooks/useResponsiveStyles';
+import { PlatformSafeAreaView } from '@/components/PlatformSafeAreaView';
 
 const { width } = Dimensions.get('window');
 
@@ -85,6 +89,7 @@ export default function RetailersScreen() {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const [selectedSort, setSelectedSort] = useState<SortType>('name_asc');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const isTabletDevice = isTablet();
 
   const canManageRetailers = ['super_admin', 'admin', 'manager', 'salesman'].includes(
     user?.role || ''
@@ -178,7 +183,7 @@ export default function RetailersScreen() {
   const getStatusInfo = (retailer: Retailer) => {
     if (!retailer.Confirm) {
       return {
-        icon: <Clock size={16} color="#f59e0b" />,
+        icon: <Clock size={isTabletDevice ? 20 : 16} color="#f59e0b" />,
         text: 'Pending',
         color: '#f59e0b',
         bgColor: '#fef3c7',
@@ -187,7 +192,7 @@ export default function RetailersScreen() {
     
     if (retailer.Retailer_Status === 1) {
       return {
-        icon: <CheckCircle size={16} color="#10b981" />,
+        icon: <CheckCircle size={isTabletDevice ? 20 : 16} color="#10b981" />,
         text: 'Active',
         color: '#10b981',
         bgColor: '#dcfce7',
@@ -195,7 +200,7 @@ export default function RetailersScreen() {
     }
     
     return {
-      icon: <AlertCircle size={16} color="#ef4444" />,
+      icon: <AlertCircle size={isTabletDevice ? 20 : 16} color="#ef4444" />,
       text: 'Inactive',
       color: '#ef4444',
       bgColor: '#fee2e2',
@@ -240,51 +245,74 @@ export default function RetailersScreen() {
     return (
       <Animated.View entering={FadeInUp.delay(index * 50).duration(600)}>
         <TouchableOpacity
-          style={styles.retailerCard}
+          style={[styles.retailerCard, isTabletDevice && styles.tabletRetailerCard]}
           onPress={() => handleRetailerPress(item)}
           activeOpacity={0.7}
         >
           <View style={styles.retailerHeader}>
             <View style={styles.retailerImageContainer}>
               {item.RetailerImage ? (
-                <Image source={{ uri: item.RetailerImage }} style={styles.retailerImage} />
+                <Image 
+                  source={{ uri: item.RetailerImage }} 
+                  style={[styles.retailerImage, isTabletDevice && styles.tabletRetailerImage]} 
+                />
               ) : (
                 <LinearGradient
                   colors={isSpecialRetailer ? ['#f59e0b', '#d97706'] : ['#667eea', '#764ba2']}
-                  style={styles.retailerImagePlaceholder}
+                  style={[
+                    styles.retailerImagePlaceholder, 
+                    isTabletDevice && styles.tabletRetailerImagePlaceholder
+                  ]}
                 >
                   {isSpecialRetailer ? (
-                    <Star size={28} color="#FFFFFF" />
+                    <Star size={isTabletDevice ? 32 : 28} color="#FFFFFF" />
                   ) : (
-                    <Building size={28} color="#FFFFFF" />
+                    <Building size={isTabletDevice ? 32 : 28} color="#FFFFFF" />
                   )}
                 </LinearGradient>
               )}
             </View>
             
             <View style={styles.retailerInfo}>
-              <Text style={styles.businessName} numberOfLines={2}>
+              <Text 
+                style={[styles.businessName, isTabletDevice && styles.tabletBusinessName]} 
+                numberOfLines={2}
+              >
                 {item.Retailer_Name}
               </Text>
               {item.Contact_Person && item.Contact_Person !== '0' && (
-                <Text style={styles.contactName}>{item.Contact_Person}</Text>
+                <Text style={[styles.contactName, isTabletDevice && styles.tabletContactName]}>
+                  {item.Contact_Person}
+                </Text>
               )}
               {item.Retailer_TFAT_Id && item.Retailer_TFAT_Id !== 'counter' && (
-                <Text style={styles.tfatId}>ID: {item.Retailer_TFAT_Id}</Text>
+                <Text style={[styles.tfatId, isTabletDevice && styles.tabletTfatId]}>
+                  ID: {item.Retailer_TFAT_Id}
+                </Text>
               )}
             </View>
             
             <View style={styles.statusContainer}>
-              <View style={[styles.statusBadge, { backgroundColor: statusInfo.bgColor }]}>
+              <View style={[
+                styles.statusBadge, 
+                { backgroundColor: statusInfo.bgColor },
+                isTabletDevice && styles.tabletStatusBadge
+              ]}>
                 {statusInfo.icon}
-                <Text style={[styles.statusText, { color: statusInfo.color }]}>
+                <Text style={[
+                  styles.statusText, 
+                  { color: statusInfo.color },
+                  isTabletDevice && styles.tabletStatusText
+                ]}>
                   {statusInfo.text}
                 </Text>
               </View>
               {isHighCredit && (
-                <View style={styles.highCreditBadge}>
-                  <TrendingUp size={12} color="#059669" />
-                  <Text style={styles.highCreditText}>High Credit</Text>
+                <View style={[styles.highCreditBadge, isTabletDevice && styles.tabletHighCreditBadge]}>
+                  <TrendingUp size={isTabletDevice ? 14 : 12} color="#059669" />
+                  <Text style={[styles.highCreditText, isTabletDevice && styles.tabletHighCreditText]}>
+                    High Credit
+                  </Text>
                 </View>
               )}
             </View>
@@ -293,22 +321,28 @@ export default function RetailersScreen() {
           <View style={styles.retailerDetails}>
             {item.Area_Name && item.Area_Name !== '0' && (
               <View style={styles.detailRow}>
-                <MapPin size={14} color="#64748b" />
-                <Text style={styles.detailText}>{item.Area_Name}</Text>
+                <MapPin size={isTabletDevice ? 16 : 14} color="#64748b" />
+                <Text style={[styles.detailText, isTabletDevice && styles.tabletDetailText]}>
+                  {item.Area_Name}
+                </Text>
               </View>
             )}
             
             {item.Retailer_Mobile && item.Retailer_Mobile !== '0' && (
               <View style={styles.detailRow}>
-                <Phone size={14} color="#64748b" />
-                <Text style={styles.detailText}>{item.Retailer_Mobile}</Text>
+                <Phone size={isTabletDevice ? 16 : 14} color="#64748b" />
+                <Text style={[styles.detailText, isTabletDevice && styles.tabletDetailText]}>
+                  {item.Retailer_Mobile}
+                </Text>
               </View>
             )}
             
             {item.Retailer_Email && item.Retailer_Email !== '0' && (
               <View style={styles.detailRow}>
-                <Mail size={14} color="#64748b" />
-                <Text style={styles.detailText}>{item.Retailer_Email}</Text>
+                <Mail size={isTabletDevice ? 16 : 14} color="#64748b" />
+                <Text style={[styles.detailText, isTabletDevice && styles.tabletDetailText]}>
+                  {item.Retailer_Email}
+                </Text>
               </View>
             )}
           </View>
@@ -316,12 +350,15 @@ export default function RetailersScreen() {
           {canManageRetailers && (
             <View style={styles.creditInfo}>
               <View style={styles.creditItem}>
-                <CreditCard size={16} color="#667eea" />
+                <CreditCard size={isTabletDevice ? 20 : 16} color="#667eea" />
                 <View style={styles.creditDetails}>
-                  <Text style={styles.creditLabel}>Credit Limit</Text>
+                  <Text style={[styles.creditLabel, isTabletDevice && styles.tabletCreditLabel]}>
+                    Credit Limit
+                  </Text>
                   <Text style={[
                     styles.creditAmount,
-                    { color: isHighCredit ? '#059669' : '#667eea' }
+                    { color: isHighCredit ? '#059669' : '#667eea' },
+                    isTabletDevice && styles.tabletCreditAmount
                   ]}>
                     {formatCurrency(item.Credit_Limit)}
                   </Text>
@@ -329,8 +366,12 @@ export default function RetailersScreen() {
               </View>
               
               <View style={styles.joinedDate}>
-                <Text style={styles.joinedLabel}>Joined</Text>
-                <Text style={styles.joinedText}>{formatDate(item.created_at)}</Text>
+                <Text style={[styles.joinedLabel, isTabletDevice && styles.tabletJoinedLabel]}>
+                  Joined
+                </Text>
+                <Text style={[styles.joinedText, isTabletDevice && styles.tabletJoinedText]}>
+                  {formatDate(item.created_at)}
+                </Text>
               </View>
             </View>
           )}
@@ -346,36 +387,52 @@ export default function RetailersScreen() {
     const highCreditRetailers = retailers.filter(r => parseFloat(r.Credit_Limit) >= 10000).length;
     
     return (
-      <View style={styles.statsContainer}>
+      <View style={[styles.statsContainer, isTabletDevice && styles.tabletStatsContainer]}>
         <View style={styles.statCard}>
           <LinearGradient colors={['#667eea', '#764ba2']} style={styles.statGradient}>
-            <Users size={20} color="#FFFFFF" />
-            <Text style={styles.statNumber}>{totalRetailers}</Text>
-            <Text style={styles.statLabel}>Total</Text>
+            <Users size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
+            <Text style={[styles.statNumber, isTabletDevice && styles.tabletStatNumber]}>
+              {totalRetailers}
+            </Text>
+            <Text style={[styles.statLabel, isTabletDevice && styles.tabletStatLabel]}>
+              Total
+            </Text>
           </LinearGradient>
         </View>
         
         <View style={styles.statCard}>
           <LinearGradient colors={['#10b981', '#059669']} style={styles.statGradient}>
-            <CheckCircle size={20} color="#FFFFFF" />
-            <Text style={styles.statNumber}>{activeRetailers}</Text>
-            <Text style={styles.statLabel}>Active</Text>
+            <CheckCircle size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
+            <Text style={[styles.statNumber, isTabletDevice && styles.tabletStatNumber]}>
+              {activeRetailers}
+            </Text>
+            <Text style={[styles.statLabel, isTabletDevice && styles.tabletStatLabel]}>
+              Active
+            </Text>
           </LinearGradient>
         </View>
         
         <View style={styles.statCard}>
           <LinearGradient colors={['#f59e0b', '#d97706']} style={styles.statGradient}>
-            <Clock size={20} color="#FFFFFF" />
-            <Text style={styles.statNumber}>{pendingRetailers}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Clock size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
+            <Text style={[styles.statNumber, isTabletDevice && styles.tabletStatNumber]}>
+              {pendingRetailers}
+            </Text>
+            <Text style={[styles.statLabel, isTabletDevice && styles.tabletStatLabel]}>
+              Pending
+            </Text>
           </LinearGradient>
         </View>
         
         <View style={styles.statCard}>
           <LinearGradient colors={['#8b5cf6', '#7c3aed']} style={styles.statGradient}>
-            <TrendingUp size={20} color="#FFFFFF" />
-            <Text style={styles.statNumber}>{highCreditRetailers}</Text>
-            <Text style={styles.statLabel}>High Credit</Text>
+            <TrendingUp size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
+            <Text style={[styles.statNumber, isTabletDevice && styles.tabletStatNumber]}>
+              {highCreditRetailers}
+            </Text>
+            <Text style={[styles.statLabel, isTabletDevice && styles.tabletStatLabel]}>
+              High Credit
+            </Text>
           </LinearGradient>
         </View>
       </View>
@@ -413,19 +470,22 @@ export default function RetailersScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <PlatformSafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <StatusBar barStyle="light-content" backgroundColor="#667eea" translucent={true} />
         <LinearGradient
           colors={['#667eea', '#764ba2']}
-          style={styles.headerGradient}
+          style={[styles.headerGradient, isTabletDevice && styles.tabletHeaderGradient]}
         >
           <View style={styles.headerContent}>
             <HamburgerMenu />
             
             <View style={styles.headerLeft}>
-              <Text style={styles.headerTitle}>Retailers</Text>
-              <Text style={styles.headerSubtitle}>
+              <Text style={[styles.headerTitle, isTabletDevice && styles.tabletHeaderTitle]}>
+                Retailers
+              </Text>
+              <Text style={[styles.headerSubtitle, isTabletDevice && styles.tabletHeaderSubtitle]}>
                 {filteredRetailers.length} retailer{filteredRetailers.length !== 1 ? 's' : ''}
               </Text>
             </View>
@@ -435,9 +495,9 @@ export default function RetailersScreen() {
                 <ModernButton
                   title="Add Retailer"
                   onPress={() => Alert.alert('Add Retailer', 'Feature coming soon!')}
-                  icon={<Plus size={20} color="#fff" />}
+                  icon={<Plus size={isTabletDevice ? 20 : 16} color="#fff" />}
                   variant="primary"
-                  size="small"
+                  size={isTabletDevice ? "medium" : "small"}
                   style={styles.addButton}
                 />
               )}
@@ -450,21 +510,22 @@ export default function RetailersScreen() {
       {renderStats()}
 
       {/* Search and Filter */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Search size={20} color="#94a3b8" />
+      <View style={[styles.searchContainer, isTabletDevice && styles.tabletSearchContainer]}>
+        <View style={[styles.searchBar, isTabletDevice && styles.tabletSearchBar]}>
+          <Search size={isTabletDevice ? 24 : 20} color="#94a3b8" />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, isTabletDevice && styles.tabletSearchInput]}
             placeholder="Search retailers by name, contact, area..."
             placeholderTextColor="#94a3b8"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
           />
-          {searchQuery.length > 0 && (
+          {searchQuery.length > 0 && Platform.OS !== 'ios' && (
             <ModernButton
               title=""
               onPress={() => setSearchQuery("")}
-              icon={<X size={20} color="#94a3b8" />}
+              icon={<X size={isTabletDevice ? 24 : 20} color="#94a3b8" />}
               variant="ghost"
               size="small"
               style={{ minWidth: 32, minHeight: 32, padding: 0 }}
@@ -475,7 +536,7 @@ export default function RetailersScreen() {
         <ModernButton
           title="Filter"
           onPress={() => setShowFilterModal(true)}
-          icon={<Filter size={20} color={(selectedFilter !== 'all' || selectedSort !== 'name_asc') ? "#FFFFFF" : "#667eea"} />}
+          icon={<Filter size={isTabletDevice ? 24 : 20} color={(selectedFilter !== 'all' || selectedSort !== 'name_asc') ? "#FFFFFF" : "#667eea"} />}
           variant={(selectedFilter !== 'all' || selectedSort !== 'name_asc') ? "primary" : "outline"}
           size="small"
           style={
@@ -491,23 +552,27 @@ export default function RetailersScreen() {
         data={filteredRetailers}
         renderItem={renderRetailerItem}
         keyExtractor={(item) => item.Retailer_Id.toString()}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent, 
+          isTabletDevice && styles.tabletListContent,
+          filteredRetailers.length === 0 && styles.emptyListContent
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
+          <View style={[styles.emptyState, isTabletDevice && styles.tabletEmptyState]}>
             <LinearGradient
               colors={['#667eea', '#764ba2']}
-              style={styles.emptyIcon}
+              style={[styles.emptyIcon, isTabletDevice && styles.tabletEmptyIcon]}
             >
-              <Users size={48} color="#FFFFFF" />
+              <Users size={isTabletDevice ? 64 : 48} color="#FFFFFF" />
             </LinearGradient>
-            <Text style={styles.emptyTitle}>
+            <Text style={[styles.emptyTitle, isTabletDevice && styles.tabletEmptyTitle]}>
               {searchQuery ? 'No retailers found' : 'No retailers yet'}
             </Text>
-            <Text style={styles.emptySubtitle}>
+            <Text style={[styles.emptySubtitle, isTabletDevice && styles.tabletEmptySubtitle]}>
               {searchQuery
                 ? 'Try adjusting your search terms or filters'
                 : 'Retailers will appear here once added'}
@@ -528,7 +593,7 @@ export default function RetailersScreen() {
         onFilterSelect={(filter) => setSelectedFilter(filter as FilterType)}
         onSortSelect={(sort) => setSelectedSort(sort as SortType)}
       />
-    </View>
+    </PlatformSafeAreaView>
   );
 }
 
@@ -538,11 +603,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   header: {
-    paddingTop: 50,
+    paddingTop: 0,
   },
   headerGradient: {
     paddingHorizontal: 20,
     paddingBottom: 20,
+    paddingTop: Platform.OS === 'ios' ? 10 : 20,
+  },
+  tabletHeaderGradient: {
+    paddingHorizontal: 32,
+    paddingBottom: 28,
+    paddingTop: Platform.OS === 'ios' ? 16 : 28,
   },
   headerContent: {
     flexDirection: 'row',
@@ -559,9 +630,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 4,
   },
+  tabletHeaderTitle: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
   headerSubtitle: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
+  },
+  tabletHeaderSubtitle: {
+    fontSize: 16,
   },
   headerActions: {
     flexDirection: 'row',
@@ -580,6 +658,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     gap: 8,
+  },
+  tabletStatsContainer: {
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    gap: 16,
   },
   statCard: {
     flex: 1,
@@ -605,17 +688,30 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 2,
   },
+  tabletStatNumber: {
+    fontSize: 20,
+    marginTop: 8,
+    marginBottom: 4,
+  },
   statLabel: {
     fontSize: 10,
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
     textAlign: 'center',
   },
+  tabletStatLabel: {
+    fontSize: 12,
+  },
   searchContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 12,
     gap: 12,
+  },
+  tabletSearchContainer: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    gap: 16,
   },
   searchBar: {
     flex: 1,
@@ -636,11 +732,21 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  tabletSearchBar: {
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    height: 60,
+  },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: '#1e293b',
     marginLeft: 12,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+  },
+  tabletSearchInput: {
+    fontSize: 18,
+    marginLeft: 16,
   },
   filterButton: {
     width: 52,
@@ -675,12 +781,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444',
   },
   listContent: {
+    paddingHorizontal: 20,
     paddingBottom: 120,
+  },
+  tabletListContent: {
+    paddingHorizontal: 32,
+    paddingBottom: 140,
+  },
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   retailerCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    marginHorizontal: 20,
     marginVertical: 8,
     padding: 20,
     shadowColor: '#000',
@@ -691,6 +805,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
+  },
+  tabletRetailerCard: {
+    borderRadius: 24,
+    marginVertical: 12,
+    padding: 24,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
   },
   retailerHeader: {
     flexDirection: 'row',
@@ -704,12 +830,22 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 16,
   },
+  tabletRetailerImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 20,
+  },
   retailerImagePlaceholder: {
     width: 70,
     height: 70,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabletRetailerImagePlaceholder: {
+    width: 90,
+    height: 90,
+    borderRadius: 20,
   },
   retailerInfo: {
     flex: 1,
@@ -722,16 +858,28 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     lineHeight: 24,
   },
+  tabletBusinessName: {
+    fontSize: 22,
+    marginBottom: 8,
+    lineHeight: 28,
+  },
   contactName: {
     fontSize: 14,
     color: '#64748b',
     marginBottom: 4,
     fontWeight: '500',
   },
+  tabletContactName: {
+    fontSize: 16,
+    marginBottom: 6,
+  },
   tfatId: {
     fontSize: 12,
     color: '#94a3b8',
     fontWeight: '400',
+  },
+  tabletTfatId: {
+    fontSize: 14,
   },
   statusContainer: {
     justifyContent: 'flex-start',
@@ -745,10 +893,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
   },
+  tabletStatusBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginBottom: 10,
+  },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 6,
+  },
+  tabletStatusText: {
+    fontSize: 14,
+    marginLeft: 8,
   },
   highCreditBadge: {
     flexDirection: 'row',
@@ -759,10 +917,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 4,
   },
+  tabletHighCreditBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    gap: 6,
+  },
   highCreditText: {
     fontSize: 10,
     fontWeight: '600',
     color: '#059669',
+  },
+  tabletHighCreditText: {
+    fontSize: 12,
   },
   retailerDetails: {
     marginBottom: 16,
@@ -778,6 +945,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
     fontWeight: '400',
+  },
+  tabletDetailText: {
+    fontSize: 16,
+    marginLeft: 10,
   },
   creditInfo: {
     flexDirection: 'row',
@@ -800,9 +971,16 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontWeight: '500',
   },
+  tabletCreditLabel: {
+    fontSize: 14,
+    marginLeft: 10,
+  },
   creditAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  tabletCreditAmount: {
+    fontSize: 18,
   },
   joinedDate: {
     alignItems: 'flex-end',
@@ -812,16 +990,26 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontWeight: '500',
   },
+  tabletJoinedLabel: {
+    fontSize: 14,
+  },
   joinedText: {
     fontSize: 14,
     color: '#1e293b',
     fontWeight: '600',
+  },
+  tabletJoinedText: {
+    fontSize: 16,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 80,
     paddingHorizontal: 20,
+  },
+  tabletEmptyState: {
+    paddingVertical: 120,
+    paddingHorizontal: 40,
   },
   emptyIcon: {
     width: 96,
@@ -831,6 +1019,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 24,
   },
+  tabletEmptyIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 32,
+  },
   emptyTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -838,10 +1032,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: 'center',
   },
+  tabletEmptyTitle: {
+    fontSize: 30,
+    marginBottom: 16,
+  },
   emptySubtitle: {
     fontSize: 16,
     color: '#64748b',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  tabletEmptySubtitle: {
+    fontSize: 18,
+    lineHeight: 28,
+    maxWidth: 500,
   },
 });

@@ -10,7 +10,8 @@ import {
   Dimensions,
   Alert,
   TextInput,
-  Modal,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { apiService } from '@/services/api';
@@ -42,7 +43,9 @@ import {
   Calendar,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import { isTablet } from '@/hooks/useResponsiveStyles';
+import { PlatformSafeAreaView } from '@/components/PlatformSafeAreaView';
 
 const { width } = Dimensions.get('window');
 
@@ -68,6 +71,7 @@ export default function PartsScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const isTabletDevice = isTablet();
 
   const canManageParts = ['super_admin', 'admin', 'manager'].includes(user?.role || '');
   const canAddToCart = ['admin', 'manager', 'salesman'].includes(user?.role || '');
@@ -177,7 +181,7 @@ export default function PartsScreen() {
     
     if (part.GuruPoint > 0) {
       badges.push({
-        icon: <Award size={12} color="#f59e0b" />,
+        icon: <Award size={isTabletDevice ? 14 : 12} color="#f59e0b" />,
         text: 'Guru',
         color: '#f59e0b',
         bgColor: '#fef3c7',
@@ -186,7 +190,7 @@ export default function PartsScreen() {
     
     if (part.ChampionPoint > 0) {
       badges.push({
-        icon: <Star size={12} color="#8b5cf6" />,
+        icon: <Star size={isTabletDevice ? 14 : 12} color="#8b5cf6" />,
         text: 'Champion',
         color: '#8b5cf6',
         bgColor: '#ede9fe',
@@ -195,7 +199,7 @@ export default function PartsScreen() {
     
     if (part.Is_Order_Pad === 1) {
       badges.push({
-        icon: <Zap size={12} color="#10b981" />,
+        icon: <Zap size={isTabletDevice ? 14 : 12} color="#10b981" />,
         text: 'Quick Order',
         color: '#10b981',
         bgColor: '#dcfce7',
@@ -281,7 +285,7 @@ export default function PartsScreen() {
     
     return (
       <Animated.View entering={FadeInUp.delay(index * 50).duration(600)}>
-        <View style={styles.partCard}>
+        <View style={[styles.partCard, isTabletDevice && styles.tabletPartCard]}>
           <TouchableOpacity
             style={styles.partContent}
             onPress={() => router.push(`/(tabs)/parts/${item.Part_Number}`)}
@@ -290,33 +294,51 @@ export default function PartsScreen() {
             <View style={styles.partHeader}>
               <View style={styles.partImageContainer}>
                 {item.Part_Image ? (
-                  <Image source={{ uri: item.Part_Image }} style={styles.partImage} />
+                  <Image 
+                    source={{ uri: item.Part_Image }} 
+                    style={[styles.partImage, isTabletDevice && styles.tabletPartImage]} 
+                  />
                 ) : (
                   <LinearGradient
                     colors={['#667eea', '#764ba2']}
-                    style={styles.partImagePlaceholder}
+                    style={[styles.partImagePlaceholder, isTabletDevice && styles.tabletPartImagePlaceholder]}
                   >
-                    <Package size={28} color="#FFFFFF" />
+                    <Package size={isTabletDevice ? 32 : 28} color="#FFFFFF" />
                   </LinearGradient>
                 )}
                 
-                <View style={[styles.stockIndicator, { backgroundColor: stockStatus.color }]}>
-                  <Text style={styles.stockIndicatorText}>{stockStatus.currentStock}</Text>
+                <View style={[
+                  styles.stockIndicator, 
+                  { backgroundColor: stockStatus.color },
+                  isTabletDevice && styles.tabletStockIndicator
+                ]}>
+                  <Text style={[styles.stockIndicatorText, isTabletDevice && styles.tabletStockIndicatorText]}>
+                    {stockStatus.currentStock}
+                  </Text>
                 </View>
               </View>
               
               <View style={styles.partInfo}>
-                <Text style={styles.partName} numberOfLines={2}>
+                <Text 
+                  style={[styles.partName, isTabletDevice && styles.tabletPartName]} 
+                  numberOfLines={2}
+                >
                   {item.Part_Name}
                 </Text>
-                <Text style={styles.partNumber}>#{item.Part_Number}</Text>
+                <Text style={[styles.partNumber, isTabletDevice && styles.tabletPartNumber]}>
+                  #{item.Part_Number}
+                </Text>
                 
                 <View style={styles.categoryContainer}>
-                  <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryText}>{item.Part_Catagory}</Text>
+                  <View style={[styles.categoryBadge, isTabletDevice && styles.tabletCategoryBadge]}>
+                    <Text style={[styles.categoryText, isTabletDevice && styles.tabletCategoryText]}>
+                      {item.Part_Catagory}
+                    </Text>
                   </View>
-                  <View style={styles.focusGroupBadge}>
-                    <Text style={styles.focusGroupText}>{item.Focus_Group}</Text>
+                  <View style={[styles.focusGroupBadge, isTabletDevice && styles.tabletFocusGroupBadge]}>
+                    <Text style={[styles.focusGroupText, isTabletDevice && styles.tabletFocusGroupText]}>
+                      {item.Focus_Group}
+                    </Text>
                   </View>
                 </View>
                 
@@ -324,10 +346,18 @@ export default function PartsScreen() {
                   {badges.map((badge, badgeIndex) => (
                     <View
                       key={badgeIndex}
-                      style={[styles.badge, { backgroundColor: badge.bgColor }]}
+                      style={[
+                        styles.badge, 
+                        { backgroundColor: badge.bgColor },
+                        isTabletDevice && styles.tabletBadge
+                      ]}
                     >
                       {badge.icon}
-                      <Text style={[styles.badgeText, { color: badge.color }]}>
+                      <Text style={[
+                        styles.badgeText, 
+                        { color: badge.color },
+                        isTabletDevice && styles.tabletBadgeText
+                      ]}>
                         {badge.text}
                       </Text>
                     </View>
@@ -338,14 +368,22 @@ export default function PartsScreen() {
               <View style={styles.partPrice}>
                 {discountInfo ? (
                   <View style={styles.discountPricing}>
-                    <Text style={styles.originalPrice}>{formatCurrency(item.Part_Price)}</Text>
-                    <Text style={styles.discountedPrice}>{formatCurrency(discountInfo.finalPrice)}</Text>
-                    <View style={styles.discountBadge}>
-                      <Text style={styles.discountText}>-{discountInfo.percentage}%</Text>
+                    <Text style={[styles.originalPrice, isTabletDevice && styles.tabletOriginalPrice]}>
+                      {formatCurrency(item.Part_Price)}
+                    </Text>
+                    <Text style={[styles.discountedPrice, isTabletDevice && styles.tabletDiscountedPrice]}>
+                      {formatCurrency(discountInfo.finalPrice)}
+                    </Text>
+                    <View style={[styles.discountBadge, isTabletDevice && styles.tabletDiscountBadge]}>
+                      <Text style={[styles.discountText, isTabletDevice && styles.tabletDiscountText]}>
+                        -{discountInfo.percentage}%
+                      </Text>
                     </View>
                   </View>
                 ) : (
-                  <Text style={styles.priceText}>{formatCurrency(item.Part_Price)}</Text>
+                  <Text style={[styles.priceText, isTabletDevice && styles.tabletPriceText]}>
+                    {formatCurrency(item.Part_Price)}
+                  </Text>
                 )}
               </View>
             </View>
@@ -354,23 +392,39 @@ export default function PartsScreen() {
               <View style={styles.stockInfo}>
                 <View style={[
                   styles.stockStatusBadge,
-                  { backgroundColor: stockStatus.bgColor }
+                  { backgroundColor: stockStatus.bgColor },
+                  isTabletDevice && styles.tabletStockStatusBadge
                 ]}>
                   {stockStatus.isLowStock && (
-                    <AlertTriangle size={14} color={stockStatus.color} style={styles.stockIcon} />
+                    <AlertTriangle 
+                      size={isTabletDevice ? 16 : 14} 
+                      color={stockStatus.color} 
+                      style={styles.stockIcon} 
+                    />
                   )}
-                  <Text style={[styles.stockText, { color: stockStatus.color }]}>
+                  <Text style={[
+                    styles.stockText, 
+                    { color: stockStatus.color },
+                    isTabletDevice && styles.tabletStockText
+                  ]}>
                     {stockStatus.status}
                   </Text>
                 </View>
                 
-                <Text style={styles.minQtyText}>Min Qty: {item.Part_MinQty}</Text>
+                <Text style={[styles.minQtyText, isTabletDevice && styles.tabletMinQtyText]}>
+                  Min Qty: {item.Part_MinQty}
+                </Text>
               </View>
               
               {item.Part_Application && item.Part_Application !== '0' && (
                 <View style={styles.applicationInfo}>
-                  <Text style={styles.applicationLabel}>Compatible:</Text>
-                  <Text style={styles.applicationText} numberOfLines={2}>
+                  <Text style={[styles.applicationLabel, isTabletDevice && styles.tabletApplicationLabel]}>
+                    Compatible:
+                  </Text>
+                  <Text 
+                    style={[styles.applicationText, isTabletDevice && styles.tabletApplicationText]} 
+                    numberOfLines={2}
+                  >
                     {item.Part_Application}
                   </Text>
                 </View>
@@ -381,50 +435,60 @@ export default function PartsScreen() {
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
             <TouchableOpacity
-              style={styles.viewButton}
+              style={[styles.viewButton, isTabletDevice && styles.tabletViewButton]}
               onPress={() => router.push(`/(tabs)/parts/${item.Part_Number}`)}
             >
-              <Eye size={16} color="#667eea" />
-              <Text style={styles.viewButtonText}>View</Text>
+              <Eye size={isTabletDevice ? 20 : 16} color="#667eea" />
+              <Text style={[styles.viewButtonText, isTabletDevice && styles.tabletViewButtonText]}>
+                View
+              </Text>
             </TouchableOpacity>
 
             {canManageParts && (
               <TouchableOpacity
-                style={styles.editButton}
+                style={[styles.editButton, isTabletDevice && styles.tabletEditButton]}
                 onPress={() => router.push(`/(tabs)/parts/${item.Part_Number}?edit=true`)}
               >
-                <Edit3 size={16} color="#059669" />
-                <Text style={styles.editButtonText}>Edit</Text>
+                <Edit3 size={isTabletDevice ? 20 : 16} color="#059669" />
+                <Text style={[styles.editButtonText, isTabletDevice && styles.tabletEditButtonText]}>
+                  Edit
+                </Text>
               </TouchableOpacity>
             )}
 
             {canAddToCart && (
               <View style={styles.cartControls}>
                 {cartItem ? (
-                  <View style={styles.quantityControls}>
+                  <View style={[styles.quantityControls, isTabletDevice && styles.tabletQuantityControls]}>
                     <TouchableOpacity
-                      style={styles.quantityButton}
+                      style={[styles.quantityButton, isTabletDevice && styles.tabletQuantityButton]}
                       onPress={() => updateCartQuantity(item.Part_Number, cartItem.quantity - 1)}
+                      hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                     >
-                      <Minus size={16} color="#667eea" />
+                      <Minus size={isTabletDevice ? 20 : 16} color="#667eea" />
                     </TouchableOpacity>
                     
-                    <Text style={styles.quantityText}>{cartItem.quantity}</Text>
+                    <Text style={[styles.quantityText, isTabletDevice && styles.tabletQuantityText]}>
+                      {cartItem.quantity}
+                    </Text>
                     
                     <TouchableOpacity
-                      style={styles.quantityButton}
+                      style={[styles.quantityButton, isTabletDevice && styles.tabletQuantityButton]}
                       onPress={() => updateCartQuantity(item.Part_Number, cartItem.quantity + 1)}
+                      hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                     >
-                      <Plus size={16} color="#667eea" />
+                      <Plus size={isTabletDevice ? 20 : 16} color="#667eea" />
                     </TouchableOpacity>
                   </View>
                 ) : (
                   <TouchableOpacity
-                    style={styles.addToCartButton}
+                    style={[styles.addToCartButton, isTabletDevice && styles.tabletAddToCartButton]}
                     onPress={() => addToCart(item)}
                   >
-                    <ShoppingCart size={16} color="#FFFFFF" />
-                    <Text style={styles.addToCartText}>Add</Text>
+                    <ShoppingCart size={isTabletDevice ? 20 : 16} color="#FFFFFF" />
+                    <Text style={[styles.addToCartText, isTabletDevice && styles.tabletAddToCartText]}>
+                      Add
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -442,36 +506,52 @@ export default function PartsScreen() {
     const quickOrderParts = parts.filter(p => p.Is_Order_Pad === 1).length;
     
     return (
-      <View style={styles.statsContainer}>
+      <View style={[styles.statsContainer, isTabletDevice && styles.tabletStatsContainer]}>
         <View style={styles.statCard}>
           <LinearGradient colors={['#667eea', '#764ba2']} style={styles.statGradient}>
-            <Package size={20} color="#FFFFFF" />
-            <Text style={styles.statNumber}>{totalParts}</Text>
-            <Text style={styles.statLabel}>Total Parts</Text>
+            <Package size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
+            <Text style={[styles.statNumber, isTabletDevice && styles.tabletStatNumber]}>
+              {totalParts}
+            </Text>
+            <Text style={[styles.statLabel, isTabletDevice && styles.tabletStatLabel]}>
+              Total Parts
+            </Text>
           </LinearGradient>
         </View>
         
         <View style={styles.statCard}>
           <LinearGradient colors={['#ef4444', '#dc2626']} style={styles.statGradient}>
-            <AlertTriangle size={20} color="#FFFFFF" />
-            <Text style={styles.statNumber}>{lowStockParts}</Text>
-            <Text style={styles.statLabel}>Low Stock</Text>
+            <AlertTriangle size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
+            <Text style={[styles.statNumber, isTabletDevice && styles.tabletStatNumber]}>
+              {lowStockParts}
+            </Text>
+            <Text style={[styles.statLabel, isTabletDevice && styles.tabletStatLabel]}>
+              Low Stock
+            </Text>
           </LinearGradient>
         </View>
         
         <View style={styles.statCard}>
           <LinearGradient colors={['#f59e0b', '#d97706']} style={styles.statGradient}>
-            <TrendingUp size={20} color="#FFFFFF" />
-            <Text style={styles.statNumber}>{highDemandParts}</Text>
-            <Text style={styles.statLabel}>High Demand</Text>
+            <TrendingUp size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
+            <Text style={[styles.statNumber, isTabletDevice && styles.tabletStatNumber]}>
+              {highDemandParts}
+            </Text>
+            <Text style={[styles.statLabel, isTabletDevice && styles.tabletStatLabel]}>
+              High Demand
+            </Text>
           </LinearGradient>
         </View>
         
         <View style={styles.statCard}>
           <LinearGradient colors={['#10b981', '#059669']} style={styles.statGradient}>
-            <Zap size={20} color="#FFFFFF" />
-            <Text style={styles.statNumber}>{quickOrderParts}</Text>
-            <Text style={styles.statLabel}>Quick Order</Text>
+            <Zap size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
+            <Text style={[styles.statNumber, isTabletDevice && styles.tabletStatNumber]}>
+              {quickOrderParts}
+            </Text>
+            <Text style={[styles.statLabel, isTabletDevice && styles.tabletStatLabel]}>
+              Quick Order
+            </Text>
           </LinearGradient>
         </View>
       </View>
@@ -509,21 +589,22 @@ export default function PartsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <PlatformSafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <StatusBar barStyle="light-content" backgroundColor="#667eea" translucent={true} />
         <LinearGradient
           colors={['#667eea', '#764ba2']}
-          style={styles.headerGradient}
+          style={[styles.headerGradient, isTabletDevice && styles.tabletHeaderGradient]}
         >
           <View style={styles.headerContent}>
             <HamburgerMenu />
             
             <View style={styles.headerLeft}>
-              <Text style={styles.headerTitle}>
+              <Text style={[styles.headerTitle, isTabletDevice && styles.tabletHeaderTitle]}>
                 {user?.role === 'retailer' ? 'Parts Catalog' : 'Parts Management'}
               </Text>
-              <Text style={styles.headerSubtitle}>
+              <Text style={[styles.headerSubtitle, isTabletDevice && styles.tabletHeaderSubtitle]}>
                 {filteredParts.length} part{filteredParts.length !== 1 ? 's' : ''} available
               </Text>
             </View>
@@ -531,22 +612,26 @@ export default function PartsScreen() {
             <View style={styles.headerActions}>
               {canAddToCart && cart.length > 0 && (
                 <TouchableOpacity
-                  style={styles.cartButton}
+                  style={[styles.cartButton, isTabletDevice && styles.tabletCartButton]}
                   onPress={() => setShowCart(true)}
+                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                 >
-                  <ShoppingCart size={24} color="#FFFFFF" />
-                  <View style={styles.cartBadge}>
-                    <Text style={styles.cartBadgeText}>{cart.length}</Text>
+                  <ShoppingCart size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
+                  <View style={[styles.cartBadge, isTabletDevice && styles.tabletCartBadge]}>
+                    <Text style={[styles.cartBadgeText, isTabletDevice && styles.tabletCartBadgeText]}>
+                      {cart.length}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               )}
               
               {canManageParts && (
                 <TouchableOpacity
-                  style={styles.addButton}
+                  style={[styles.addButton, isTabletDevice && styles.tabletAddButton]}
                   onPress={() => router.push('/(tabs)/parts/add')}
+                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                 >
-                  <Plus size={24} color="#FFFFFF" />
+                  <Plus size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
                 </TouchableOpacity>
               )}
             </View>
@@ -558,19 +643,23 @@ export default function PartsScreen() {
       {renderStats()}
 
       {/* Search and Filter */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Search size={20} color="#94a3b8" />
+      <View style={[styles.searchContainer, isTabletDevice && styles.tabletSearchContainer]}>
+        <View style={[styles.searchBar, isTabletDevice && styles.tabletSearchBar]}>
+          <Search size={isTabletDevice ? 24 : 20} color="#94a3b8" />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, isTabletDevice && styles.tabletSearchInput]}
             placeholder="Search parts by name, number, category..."
             placeholderTextColor="#94a3b8"
             value={searchQuery}
             onChangeText={setSearchQuery}
+            clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <X size={20} color="#94a3b8" />
+          {searchQuery.length > 0 && Platform.OS !== 'ios' && (
+            <TouchableOpacity 
+              onPress={() => setSearchQuery('')}
+              hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+            >
+              <X size={isTabletDevice ? 24 : 20} color="#94a3b8" />
             </TouchableOpacity>
           )}
         </View>
@@ -578,11 +667,16 @@ export default function PartsScreen() {
         <TouchableOpacity
           style={[
             styles.filterButton,
-            (selectedFilter !== 'all' || selectedSort !== 'name_asc') && styles.filterButtonActive
+            (selectedFilter !== 'all' || selectedSort !== 'name_asc') && styles.filterButtonActive,
+            isTabletDevice && styles.tabletFilterButton
           ]}
           onPress={() => setShowFilterModal(true)}
+          hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
         >
-          <Filter size={20} color={(selectedFilter !== 'all' || selectedSort !== 'name_asc') ? "#FFFFFF" : "#667eea"} />
+          <Filter 
+            size={isTabletDevice ? 24 : 20} 
+            color={(selectedFilter !== 'all' || selectedSort !== 'name_asc') ? "#FFFFFF" : "#667eea"} 
+          />
           {(selectedFilter !== 'all' || selectedSort !== 'name_asc') && (
             <View style={styles.filterIndicator} />
           )}
@@ -594,23 +688,27 @@ export default function PartsScreen() {
         data={filteredParts}
         renderItem={renderPartItem}
         keyExtractor={(item) => item.Part_Number}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent, 
+          isTabletDevice && styles.tabletListContent,
+          filteredParts.length === 0 && styles.emptyListContent
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
+          <View style={[styles.emptyState, isTabletDevice && styles.tabletEmptyState]}>
             <LinearGradient
               colors={['#667eea', '#764ba2']}
-              style={styles.emptyIcon}
+              style={[styles.emptyIcon, isTabletDevice && styles.tabletEmptyIcon]}
             >
-              <Package size={48} color="#FFFFFF" />
+              <Package size={isTabletDevice ? 64 : 48} color="#FFFFFF" />
             </LinearGradient>
-            <Text style={styles.emptyTitle}>
+            <Text style={[styles.emptyTitle, isTabletDevice && styles.tabletEmptyTitle]}>
               {searchQuery ? 'No parts found' : 'No parts available'}
             </Text>
-            <Text style={styles.emptySubtitle}>
+            <Text style={[styles.emptySubtitle, isTabletDevice && styles.tabletEmptySubtitle]}>
               {searchQuery
                 ? 'Try adjusting your search terms or filters'
                 : 'Parts catalog is empty'}
@@ -631,7 +729,7 @@ export default function PartsScreen() {
         onFilterSelect={(filter) => setSelectedFilter(filter as FilterType)}
         onSortSelect={(sort) => setSelectedSort(sort as SortType)}
       />
-    </View>
+    </PlatformSafeAreaView>
   );
 }
 
@@ -641,11 +739,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   header: {
-    paddingTop: 50,
+    paddingTop: 0,
   },
   headerGradient: {
     paddingHorizontal: 20,
     paddingBottom: 20,
+    paddingTop: Platform.OS === 'ios' ? 10 : 20,
+  },
+  tabletHeaderGradient: {
+    paddingHorizontal: 32,
+    paddingBottom: 28,
+    paddingTop: Platform.OS === 'ios' ? 16 : 28,
   },
   headerContent: {
     flexDirection: 'row',
@@ -662,9 +766,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 4,
   },
+  tabletHeaderTitle: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
   headerSubtitle: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
+  },
+  tabletHeaderSubtitle: {
+    fontSize: 16,
   },
   headerActions: {
     flexDirection: 'row',
@@ -674,6 +785,9 @@ const styles = StyleSheet.create({
   cartButton: {
     position: 'relative',
     padding: 8,
+  },
+  tabletCartButton: {
+    padding: 10,
   },
   cartBadge: {
     position: 'absolute',
@@ -686,10 +800,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletCartBadge: {
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+  },
   cartBadgeText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  tabletCartBadgeText: {
+    fontSize: 14,
   },
   addButton: {
     width: 44,
@@ -699,11 +821,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletAddButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+  },
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 16,
     gap: 8,
+  },
+  tabletStatsContainer: {
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    gap: 16,
   },
   statCard: {
     flex: 1,
@@ -729,17 +861,30 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 2,
   },
+  tabletStatNumber: {
+    fontSize: 20,
+    marginTop: 8,
+    marginBottom: 4,
+  },
   statLabel: {
     fontSize: 10,
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
     textAlign: 'center',
   },
+  tabletStatLabel: {
+    fontSize: 12,
+  },
   searchContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 12,
     gap: 12,
+  },
+  tabletSearchContainer: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    gap: 16,
   },
   searchBar: {
     flex: 1,
@@ -760,11 +905,21 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
+  tabletSearchBar: {
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    height: 60,
+  },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: '#1e293b',
     marginLeft: 12,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+  },
+  tabletSearchInput: {
+    fontSize: 18,
+    marginLeft: 16,
   },
   filterButton: {
     width: 52,
@@ -785,6 +940,11 @@ const styles = StyleSheet.create({
     elevation: 3,
     position: 'relative',
   },
+  tabletFilterButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+  },
   filterButtonActive: {
     backgroundColor: '#667eea',
     borderColor: '#667eea',
@@ -799,12 +959,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444',
   },
   listContent: {
+    paddingHorizontal: 20,
     paddingBottom: 160,
+  },
+  tabletListContent: {
+    paddingHorizontal: 32,
+    paddingBottom: 180,
+  },
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   partCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    marginHorizontal: 20,
     marginVertical: 8,
     shadowColor: '#000',
     shadowOffset: {
@@ -815,6 +983,17 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     overflow: 'hidden',
+  },
+  tabletPartCard: {
+    borderRadius: 24,
+    marginVertical: 12,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
   },
   partContent: {
     padding: 20,
@@ -832,12 +1011,22 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 16,
   },
+  tabletPartImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+  },
   partImagePlaceholder: {
     width: 80,
     height: 80,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabletPartImagePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 20,
   },
   stockIndicator: {
     position: 'absolute',
@@ -851,10 +1040,19 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
+  tabletStockIndicator: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 3,
+  },
   stockIndicatorText: {
     fontSize: 10,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  tabletStockIndicatorText: {
+    fontSize: 12,
   },
   partInfo: {
     flex: 1,
@@ -867,11 +1065,20 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     lineHeight: 24,
   },
+  tabletPartName: {
+    fontSize: 22,
+    marginBottom: 8,
+    lineHeight: 28,
+  },
   partNumber: {
     fontSize: 14,
     color: '#64748b',
     marginBottom: 8,
     fontWeight: '500',
+  },
+  tabletPartNumber: {
+    fontSize: 16,
+    marginBottom: 10,
   },
   categoryContainer: {
     flexDirection: 'row',
@@ -885,10 +1092,18 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
+  tabletCategoryBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
   categoryText: {
     fontSize: 12,
     color: '#667eea',
     fontWeight: '600',
+  },
+  tabletCategoryText: {
+    fontSize: 14,
   },
   focusGroupBadge: {
     backgroundColor: '#dcfce7',
@@ -896,10 +1111,18 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
+  tabletFocusGroupBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
   focusGroupText: {
     fontSize: 12,
     color: '#059669',
     fontWeight: '600',
+  },
+  tabletFocusGroupText: {
+    fontSize: 14,
   },
   badgesContainer: {
     flexDirection: 'row',
@@ -914,9 +1137,18 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     gap: 3,
   },
+  tabletBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+  },
   badgeText: {
     fontSize: 10,
     fontWeight: '600',
+  },
+  tabletBadgeText: {
+    fontSize: 12,
   },
   partPrice: {
     justifyContent: 'flex-start',
@@ -927,6 +1159,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#059669',
   },
+  tabletPriceText: {
+    fontSize: 26,
+  },
   discountPricing: {
     alignItems: 'flex-end',
   },
@@ -936,11 +1171,19 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     marginBottom: 2,
   },
+  tabletOriginalPrice: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
   discountedPrice: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#059669',
     marginBottom: 4,
+  },
+  tabletDiscountedPrice: {
+    fontSize: 24,
+    marginBottom: 6,
   },
   discountBadge: {
     backgroundColor: '#fee2e2',
@@ -948,10 +1191,18 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 6,
   },
+  tabletDiscountBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
   discountText: {
     fontSize: 10,
     fontWeight: 'bold',
     color: '#dc2626',
+  },
+  tabletDiscountText: {
+    fontSize: 12,
   },
   partFooter: {
     marginBottom: 16,
@@ -968,6 +1219,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 4,
   },
+  tabletStockStatusBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginBottom: 6,
+  },
   stockIcon: {
     marginRight: 6,
   },
@@ -975,9 +1232,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  tabletStockText: {
+    fontSize: 14,
+  },
   minQtyText: {
     fontSize: 11,
     color: '#94a3b8',
+  },
+  tabletMinQtyText: {
+    fontSize: 13,
   },
   applicationInfo: {
     paddingTop: 12,
@@ -990,10 +1253,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
+  tabletApplicationLabel: {
+    fontSize: 14,
+    marginBottom: 6,
+  },
   applicationText: {
     fontSize: 12,
     color: '#94a3b8',
     lineHeight: 16,
+  },
+  tabletApplicationText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -1011,10 +1282,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 6,
   },
+  tabletViewButton: {
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 8,
+  },
   viewButtonText: {
     color: '#667eea',
     fontSize: 14,
     fontWeight: '600',
+  },
+  tabletViewButtonText: {
+    fontSize: 16,
   },
   editButton: {
     flex: 1,
@@ -1026,10 +1305,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 6,
   },
+  tabletEditButton: {
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 8,
+  },
   editButtonText: {
     color: '#059669',
     fontSize: 14,
     fontWeight: '600',
+  },
+  tabletEditButtonText: {
+    fontSize: 16,
   },
   cartControls: {
     flex: 1,
@@ -1040,6 +1327,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
+  tabletQuantityControls: {
+    gap: 16,
+  },
   quantityButton: {
     width: 32,
     height: 32,
@@ -1048,12 +1338,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabletQuantityButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
   quantityText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1e293b',
     minWidth: 30,
     textAlign: 'center',
+  },
+  tabletQuantityText: {
+    fontSize: 18,
+    minWidth: 36,
   },
   addToCartButton: {
     flexDirection: 'row',
@@ -1064,16 +1363,28 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 6,
   },
+  tabletAddToCartButton: {
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 8,
+  },
   addToCartText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  tabletAddToCartText: {
+    fontSize: 16,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 80,
     paddingHorizontal: 20,
+  },
+  tabletEmptyState: {
+    paddingVertical: 120,
+    paddingHorizontal: 40,
   },
   emptyIcon: {
     width: 96,
@@ -1083,6 +1394,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 24,
   },
+  tabletEmptyIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 32,
+  },
   emptyTitle: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -1090,10 +1407,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: 'center',
   },
+  tabletEmptyTitle: {
+    fontSize: 30,
+    marginBottom: 16,
+  },
   emptySubtitle: {
     fontSize: 16,
     color: '#64748b',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  tabletEmptySubtitle: {
+    fontSize: 18,
+    lineHeight: 28,
+    maxWidth: 500,
   },
 });

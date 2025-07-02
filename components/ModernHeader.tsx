@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar as RNStatusBar, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { ChevronLeft, MoveHorizontal as MoreHorizontal } from 'lucide-react-native';
@@ -108,10 +108,32 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
     </Animated.View>
   );
 
+  // Set status bar style based on variant
+  const getStatusBarStyle = () => {
+    if (variant === 'minimal') {
+      return 'dark-content';
+    }
+    return 'light-content';
+  };
+
+  // Set status bar background color
+  const getStatusBarBgColor = () => {
+    if (variant === 'minimal') {
+      return '#FFFFFF';
+    } else if (variant === 'default') {
+      return '#667eea';
+    }
+    return 'transparent';
+  };
+
   if (variant === 'gradient') {
     return (
       <>
-        <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <StatusBar 
+          barStyle={getStatusBarStyle()} 
+          backgroundColor={getStatusBarBgColor()} 
+          translucent={true} 
+        />
         <LinearGradient
           colors={['#667eea', '#764ba2']}
           start={{ x: 0, y: 0 }}
@@ -130,7 +152,11 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   if (variant === 'glass') {
     return (
       <>
-        <RNStatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+        <StatusBar 
+          barStyle={getStatusBarStyle()} 
+          backgroundColor={getStatusBarBgColor()} 
+          translucent={true} 
+        />
         {Platform.OS === 'ios' ? (
           <BlurView intensity={80} style={[
             styles.container, 
@@ -157,7 +183,10 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   if (variant === 'minimal') {
     return (
       <>
-        <RNStatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <StatusBar 
+          barStyle={getStatusBarStyle()} 
+          backgroundColor={getStatusBarBgColor()} 
+        />
         <View style={[
           styles.container, 
           styles.minimal,
@@ -171,7 +200,11 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
 
   return (
     <>
-      <RNStatusBar barStyle="light-content" backgroundColor="#667eea" />
+      <StatusBar 
+        barStyle={getStatusBarStyle()} 
+        backgroundColor={getStatusBarBgColor()} 
+        translucent={true} 
+      />
       <View style={[
         styles.container, 
         styles.default,
@@ -185,12 +218,12 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: Platform.OS === 'ios' ? 50 : (RNStatusBar.currentHeight || 0) + 10,
+    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 10,
     paddingBottom: 16,
     paddingHorizontal: 20,
   },
   tabletContainer: {
-    paddingTop: Platform.OS === 'ios' ? 60 : (RNStatusBar.currentHeight || 0) + 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
     paddingBottom: 24,
     paddingHorizontal: 32,
   },
@@ -247,7 +280,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   tabletActionButton: {
     paddingVertical: 10,

@@ -8,6 +8,8 @@ import {
   RefreshControl,
   Alert,
   Dimensions,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
@@ -22,6 +24,8 @@ import { HamburgerMenu } from '@/components/HamburgerMenu';
 import { Package, ShoppingCart, Users, TriangleAlert as AlertTriangle, TrendingUp, Clock, CircleCheck as CheckCircle, ChartBar as BarChart3, DollarSign, Bell, Plus, Scan, Camera, FileText, Menu, Grid3x3 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { isTablet } from '@/hooks/useResponsiveStyles';
+import { PlatformSafeAreaView } from '@/components/PlatformSafeAreaView';
 
 const { width } = Dimensions.get('window');
 
@@ -59,6 +63,7 @@ export default function DashboardScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const isTabletDevice = isTablet();
 
   const loadDashboardData = async () => {
     try {
@@ -206,7 +211,7 @@ export default function DashboardScreen() {
       actions.push({
         id: 'scan_barcode',
         title: 'Scan Part',
-        icon: <Scan size={24} color="#FFFFFF" />,
+        icon: <Scan size={isTabletDevice ? 28 : 24} color="#FFFFFF" />,
         colors: ['#667eea', '#764ba2'],
       });
     }
@@ -215,7 +220,7 @@ export default function DashboardScreen() {
       actions.push({
         id: 'new_order',
         title: 'New Order',
-        icon: <Plus size={24} color="#FFFFFF" />,
+        icon: <Plus size={isTabletDevice ? 28 : 24} color="#FFFFFF" />,
         colors: ['#f093fb', '#f5576c'],
       });
     }
@@ -224,7 +229,7 @@ export default function DashboardScreen() {
       actions.push({
         id: 'quick_stock',
         title: 'Quick Stock',
-        icon: <Package size={24} color="#FFFFFF" />,
+        icon: <Package size={isTabletDevice ? 28 : 24} color="#FFFFFF" />,
         colors: ['#4facfe', '#00f2fe'],
       });
     }
@@ -233,7 +238,7 @@ export default function DashboardScreen() {
       actions.push({
         id: 'photo_report',
         title: 'Photo Report',
-        icon: <Camera size={24} color="#FFFFFF" />,
+        icon: <Camera size={isTabletDevice ? 28 : 24} color="#FFFFFF" />,
         colors: ['#43e97b', '#38f9d7'],
       });
     }
@@ -242,9 +247,11 @@ export default function DashboardScreen() {
 
     return (
       <Animated.View entering={FadeInUp.delay(200).duration(600)}>
-        <ModernCard style={styles.quickActionsCard}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
+        <ModernCard style={[styles.quickActionsCard, isTabletDevice && styles.tabletQuickActionsCard]}>
+          <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
+            Quick Actions
+          </Text>
+          <View style={[styles.quickActionsGrid, isTabletDevice && styles.tabletQuickActionsGrid]}>
             {actions.map((action, index) => (
               <ModernButton
                 key={action.id}
@@ -252,8 +259,8 @@ export default function DashboardScreen() {
                 onPress={() => handleQuickAction(action.id)}
                 icon={action.icon}
                 variant="gradient"
-                size="small"
-                style={styles.quickActionButton}
+                size={isTabletDevice ? "medium" : "small"}
+                style={[styles.quickActionButton, isTabletDevice && styles.tabletQuickActionButton]}
               />
             ))}
           </View>
@@ -271,7 +278,7 @@ export default function DashboardScreen() {
       menuActions.push({
         id: 'parts_catalog',
         title: 'Parts Catalog',
-        icon: <Package size={20} color="#667eea" />,
+        icon: <Package size={isTabletDevice ? 24 : 20} color="#667eea" />,
         description: 'Browse and manage parts',
       });
     }
@@ -280,7 +287,7 @@ export default function DashboardScreen() {
       menuActions.push({
         id: 'retailers_list',
         title: 'Retailers',
-        icon: <Users size={20} color="#059669" />,
+        icon: <Users size={isTabletDevice ? 24 : 20} color="#059669" />,
         description: 'Manage customer relationships',
       });
     }
@@ -289,7 +296,7 @@ export default function DashboardScreen() {
       menuActions.push({
         id: 'inventory_management',
         title: 'Inventory',
-        icon: <Grid3x3 size={20} color="#f59e0b" />,
+        icon: <Grid3x3 size={isTabletDevice ? 24 : 20} color="#f59e0b" />,
         description: 'Stock management & control',
       });
     }
@@ -298,12 +305,14 @@ export default function DashboardScreen() {
 
     return (
       <Animated.View entering={FadeInUp.delay(400).duration(600)}>
-        <ModernCard style={styles.menuCard}>
+        <ModernCard style={[styles.menuCard, isTabletDevice && styles.tabletMenuCard]}>
           <View style={styles.menuHeader}>
-            <Menu size={24} color="#1e293b" />
-            <Text style={styles.sectionTitle}>More Features</Text>
+            <Menu size={isTabletDevice ? 28 : 24} color="#1e293b" />
+            <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
+              More Features
+            </Text>
           </View>
-          <View style={styles.menuGrid}>
+          <View style={[styles.menuGrid, isTabletDevice && styles.tabletMenuGrid]}>
             {menuActions.map((action, index) => (
               <ModernButton
                 key={action.id}
@@ -311,8 +320,8 @@ export default function DashboardScreen() {
                 onPress={() => handleQuickAction(action.id)}
                 icon={action.icon}
                 variant="secondary"
-                size="small"
-                style={styles.menuItem}
+                size={isTabletDevice ? "medium" : "small"}
+                style={[styles.menuItem, isTabletDevice && styles.tabletMenuItem]}
               />
             ))}
           </View>
@@ -327,12 +336,19 @@ export default function DashboardScreen() {
     if (role === 'salesman' && stats.sales) {
       return (
         <Animated.View entering={FadeInUp.delay(400).duration(600)}>
-          <Text style={styles.sectionTitle}>Sales Performance</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
+          <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
+            Sales Performance
+          </Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.statsScroll}
+            contentContainerStyle={isTabletDevice && styles.tabletStatsScrollContent}
+          >
             <StatsCard
               title="Today"
               value={formatCurrency(stats.sales.today)}
-              icon={<DollarSign size={24} color="#FFFFFF" />}
+              icon={<DollarSign size={isTabletDevice ? 28 : 24} color="#FFFFFF" />}
               variant="gradient"
               gradientColors={['#667eea', '#764ba2']}
               trend={{ value: 12, isPositive: true }}
@@ -341,7 +357,7 @@ export default function DashboardScreen() {
             <StatsCard
               title="This Week"
               value={formatCurrency(stats.sales.thisWeek)}
-              icon={<TrendingUp size={24} color="#FFFFFF" />}
+              icon={<TrendingUp size={isTabletDevice ? 28 : 24} color="#FFFFFF" />}
               variant="gradient"
               gradientColors={['#f093fb', '#f5576c']}
               trend={{ value: 8, isPositive: true }}
@@ -350,7 +366,7 @@ export default function DashboardScreen() {
             <StatsCard
               title="This Month"
               value={formatCurrency(stats.sales.thisMonth)}
-              icon={<BarChart3 size={24} color="#FFFFFF" />}
+              icon={<BarChart3 size={isTabletDevice ? 28 : 24} color="#FFFFFF" />}
               variant="gradient"
               gradientColors={['#4facfe', '#00f2fe']}
               trend={{ value: stats.sales.growth || 0, isPositive: (stats.sales.growth || 0) >= 0 }}
@@ -364,26 +380,33 @@ export default function DashboardScreen() {
     if (['admin', 'manager'].includes(role) && stats.orders) {
       return (
         <Animated.View entering={FadeInUp.delay(400).duration(600)}>
-          <Text style={styles.sectionTitle}>Business Overview</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
+          <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
+            Business Overview
+          </Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.statsScroll}
+            contentContainerStyle={isTabletDevice && styles.tabletStatsScrollContent}
+          >
             <StatsCard
               title="Total Orders"
               value={stats.orders.total}
-              icon={<ShoppingCart size={24} color="#667eea" />}
+              icon={<ShoppingCart size={isTabletDevice ? 28 : 24} color="#667eea" />}
               trend={{ value: 15, isPositive: true }}
               delay={0}
             />
             <StatsCard
               title="Revenue"
               value={formatCurrency(stats.orders.revenue)}
-              icon={<DollarSign size={24} color="#667eea" />}
+              icon={<DollarSign size={isTabletDevice ? 28 : 24} color="#667eea" />}
               trend={{ value: stats.orders.growth || 0, isPositive: (stats.orders.growth || 0) >= 0 }}
               delay={100}
             />
             <StatsCard
               title="Pending"
               value={stats.orders.pending}
-              icon={<Clock size={24} color="#667eea" />}
+              icon={<Clock size={isTabletDevice ? 28 : 24} color="#667eea" />}
               delay={200}
             />
           </ScrollView>
@@ -394,26 +417,33 @@ export default function DashboardScreen() {
     if (role === 'storeman') {
       return (
         <Animated.View entering={FadeInUp.delay(400).duration(600)}>
-          <Text style={styles.sectionTitle}>Inventory Status</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
+          <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
+            Inventory Status
+          </Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.statsScroll}
+            contentContainerStyle={isTabletDevice && styles.tabletStatsScrollContent}
+          >
             <StatsCard
               title="Low Stock"
               value={lowStockAlerts.length}
-              icon={<AlertTriangle size={24} color="#ef4444" />}
+              icon={<AlertTriangle size={isTabletDevice ? 28 : 24} color="#ef4444" />}
               trend={{ value: 5, isPositive: false }}
               delay={0}
             />
             <StatsCard
               title="Total Parts"
               value="2,847"
-              icon={<Package size={24} color="#667eea" />}
+              icon={<Package size={isTabletDevice ? 28 : 24} color="#667eea" />}
               trend={{ value: 3, isPositive: true }}
               delay={100}
             />
             <StatsCard
               title="Categories"
               value="24"
-              icon={<BarChart3 size={24} color="#667eea" />}
+              icon={<BarChart3 size={isTabletDevice ? 28 : 24} color="#667eea" />}
               delay={200}
             />
           </ScrollView>
@@ -424,24 +454,31 @@ export default function DashboardScreen() {
     if (role === 'retailer') {
       return (
         <Animated.View entering={FadeInUp.delay(400).duration(600)}>
-          <Text style={styles.sectionTitle}>My Account</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
+          <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
+            My Account
+          </Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.statsScroll}
+            contentContainerStyle={isTabletDevice && styles.tabletStatsScrollContent}
+          >
             <StatsCard
               title="My Orders"
               value="12"
-              icon={<ShoppingCart size={24} color="#667eea" />}
+              icon={<ShoppingCart size={isTabletDevice ? 28 : 24} color="#667eea" />}
               delay={0}
             />
             <StatsCard
               title="Pending"
               value="3"
-              icon={<Clock size={24} color="#667eea" />}
+              icon={<Clock size={isTabletDevice ? 28 : 24} color="#667eea" />}
               delay={100}
             />
             <StatsCard
               title="Credit Available"
               value={formatCurrency(15000)}
-              icon={<DollarSign size={24} color="#667eea" />}
+              icon={<DollarSign size={isTabletDevice ? 28 : 24} color="#667eea" />}
               trend={{ value: 10, isPositive: true }}
               delay={200}
             />
@@ -462,7 +499,8 @@ export default function DashboardScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <PlatformSafeAreaView style={styles.container}>
+      {/* Header */}
       <ModernHeader
         title={getDashboardTitle()}
         subtitle={user?.name}
@@ -472,7 +510,7 @@ export default function DashboardScreen() {
         rightButton={
           notifications > 0
             ? {
-                icon: <Bell size={24} color="#FFFFFF" />,
+                icon: <Bell size={isTabletDevice ? 28 : 24} color="#FFFFFF" />,
                 onPress: () => Alert.alert('Notifications', `You have ${notifications} notifications`),
               }
             : undefined
@@ -482,7 +520,7 @@ export default function DashboardScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, isTabletDevice && styles.tabletContent]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
@@ -498,21 +536,33 @@ export default function DashboardScreen() {
         {/* Low Stock Alerts */}
         {lowStockAlerts.length > 0 && ['admin', 'manager', 'storeman'].includes(user?.role || '') && (
           <Animated.View entering={FadeInUp.delay(600).duration(600)}>
-            <ModernCard style={styles.alertsCard}>
+            <ModernCard style={[styles.alertsCard, isTabletDevice && styles.tabletAlertsCard]}>
               <View style={styles.alertsHeader}>
-                <Text style={styles.sectionTitle}>Stock Alerts</Text>
-                <View style={styles.alertBadge}>
-                  <Text style={styles.alertBadgeText}>{lowStockAlerts.length}</Text>
+                <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
+                  Stock Alerts
+                </Text>
+                <View style={[styles.alertBadge, isTabletDevice && styles.tabletAlertBadge]}>
+                  <Text style={[styles.alertBadgeText, isTabletDevice && styles.tabletAlertBadgeText]}>
+                    {lowStockAlerts.length}
+                  </Text>
                 </View>
               </View>
               {lowStockAlerts.slice(0, 3).map((item: any, index) => (
-                <TouchableOpacity key={index} style={styles.alertItem} activeOpacity={0.7}>
-                  <View style={styles.alertIcon}>
-                    <AlertTriangle size={16} color="#f59e0b" />
+                <TouchableOpacity 
+                  key={index} 
+                  style={[styles.alertItem, isTabletDevice && styles.tabletAlertItem]} 
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.alertIcon, isTabletDevice && styles.tabletAlertIcon]}>
+                    <AlertTriangle size={isTabletDevice ? 20 : 16} color="#f59e0b" />
                   </View>
                   <View style={styles.alertContent}>
-                    <Text style={styles.alertTitle}>{item.name}</Text>
-                    <Text style={styles.alertSubtitle}>#{item.partNumber} • {item.currentStock} in stock</Text>
+                    <Text style={[styles.alertTitle, isTabletDevice && styles.tabletAlertTitle]}>
+                      {item.name}
+                    </Text>
+                    <Text style={[styles.alertSubtitle, isTabletDevice && styles.tabletAlertSubtitle]}>
+                      #{item.partNumber} • {item.currentStock} in stock
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -521,7 +571,7 @@ export default function DashboardScreen() {
                   title={`View All ${lowStockAlerts.length} Alerts`}
                   onPress={() => handleQuickAction('low_stock_alert')}
                   variant="ghost"
-                  size="small"
+                  size={isTabletDevice ? "medium" : "small"}
                 />
               )}
             </ModernCard>
@@ -530,52 +580,66 @@ export default function DashboardScreen() {
 
         {/* Recent Activity */}
         <Animated.View entering={FadeInUp.delay(800).duration(600)}>
-          <ModernCard style={styles.activityCard}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <ModernCard style={[styles.activityCard, isTabletDevice && styles.tabletActivityCard]}>
+            <Text style={[styles.sectionTitle, isTabletDevice && styles.tabletSectionTitle]}>
+              Recent Activity
+            </Text>
             <View style={styles.activityList}>
-              <View style={styles.activityItem}>
+              <View style={[styles.activityItem, isTabletDevice && styles.tabletActivityItem]}>
                 <LinearGradient
                   colors={['#10b981', '#059669']}
-                  style={styles.activityIcon}
+                  style={[styles.activityIcon, isTabletDevice && styles.tabletActivityIcon]}
                 >
-                  <CheckCircle size={16} color="#FFFFFF" />
+                  <CheckCircle size={isTabletDevice ? 20 : 16} color="#FFFFFF" />
                 </LinearGradient>
                 <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>Order #ORD-2024-001 completed</Text>
-                  <Text style={styles.activityTime}>2 hours ago</Text>
+                  <Text style={[styles.activityTitle, isTabletDevice && styles.tabletActivityTitle]}>
+                    Order #ORD-2024-001 completed
+                  </Text>
+                  <Text style={[styles.activityTime, isTabletDevice && styles.tabletActivityTime]}>
+                    2 hours ago
+                  </Text>
                 </View>
               </View>
               
-              <View style={styles.activityItem}>
+              <View style={[styles.activityItem, isTabletDevice && styles.tabletActivityItem]}>
                 <LinearGradient
                   colors={['#f59e0b', '#d97706']}
-                  style={styles.activityIcon}
+                  style={[styles.activityIcon, isTabletDevice && styles.tabletActivityIcon]}
                 >
-                  <Package size={16} color="#FFFFFF" />
+                  <Package size={isTabletDevice ? 20 : 16} color="#FFFFFF" />
                 </LinearGradient>
                 <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>Stock updated for Brake Pads</Text>
-                  <Text style={styles.activityTime}>4 hours ago</Text>
+                  <Text style={[styles.activityTitle, isTabletDevice && styles.tabletActivityTitle]}>
+                    Stock updated for Brake Pads
+                  </Text>
+                  <Text style={[styles.activityTime, isTabletDevice && styles.tabletActivityTime]}>
+                    4 hours ago
+                  </Text>
                 </View>
               </View>
               
-              <View style={styles.activityItem}>
+              <View style={[styles.activityItem, isTabletDevice && styles.tabletActivityItem]}>
                 <LinearGradient
                   colors={['#667eea', '#764ba2']}
-                  style={styles.activityIcon}
+                  style={[styles.activityIcon, isTabletDevice && styles.tabletActivityIcon]}
                 >
-                  <Users size={16} color="#FFFFFF" />
+                  <Users size={isTabletDevice ? 20 : 16} color="#FFFFFF" />
                 </LinearGradient>
                 <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>New retailer registered</Text>
-                  <Text style={styles.activityTime}>6 hours ago</Text>
+                  <Text style={[styles.activityTitle, isTabletDevice && styles.tabletActivityTitle]}>
+                    New retailer registered
+                  </Text>
+                  <Text style={[styles.activityTime, isTabletDevice && styles.tabletActivityTime]}>
+                    6 hours ago
+                  </Text>
                 </View>
               </View>
             </View>
           </ModernCard>
         </Animated.View>
       </ScrollView>
-    </View>
+    </PlatformSafeAreaView>
   );
 }
 
@@ -590,9 +654,16 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: 120,
   },
+  tabletContent: {
+    paddingBottom: 140,
+  },
   quickActionsCard: {
     margin: 20,
     marginBottom: 16,
+  },
+  tabletQuickActionsCard: {
+    margin: 24,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 22,
@@ -601,16 +672,27 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     marginHorizontal: 20,
   },
+  tabletSectionTitle: {
+    fontSize: 26,
+    marginBottom: 24,
+    marginHorizontal: 24,
+  },
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: 16,
   },
+  tabletQuickActionsGrid: {
+    gap: 20,
+  },
   quickActionButton: {
     alignItems: 'center',
     flex: 1,
     minWidth: (width - 80) / 2 - 8,
+  },
+  tabletQuickActionButton: {
+    minWidth: (width - 96) / 2 - 10,
   },
   quickActionGradient: {
     width: 64,
@@ -638,6 +720,10 @@ const styles = StyleSheet.create({
     margin: 20,
     marginTop: 0,
   },
+  tabletMenuCard: {
+    margin: 24,
+    marginTop: 0,
+  },
   menuHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -645,6 +731,9 @@ const styles = StyleSheet.create({
   },
   menuGrid: {
     gap: 16,
+  },
+  tabletMenuGrid: {
+    gap: 20,
   },
   menuItem: {
     flexDirection: 'row',
@@ -654,6 +743,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#e2e8f0',
+  },
+  tabletMenuItem: {
+    padding: 20,
+    borderRadius: 16,
   },
   menuItemIcon: {
     width: 40,
@@ -688,8 +781,16 @@ const styles = StyleSheet.create({
   statsScroll: {
     paddingLeft: 20,
   },
+  tabletStatsScrollContent: {
+    paddingLeft: 24,
+    paddingRight: 8,
+  },
   alertsCard: {
     margin: 20,
+    marginTop: 0,
+  },
+  tabletAlertsCard: {
+    margin: 24,
     marginTop: 0,
   },
   alertsHeader: {
@@ -706,10 +807,19 @@ const styles = StyleSheet.create({
     minWidth: 32,
     alignItems: 'center',
   },
+  tabletAlertBadge: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minWidth: 40,
+  },
   alertBadgeText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  tabletAlertBadgeText: {
+    fontSize: 16,
   },
   alertItem: {
     flexDirection: 'row',
@@ -717,6 +827,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
+  },
+  tabletAlertItem: {
+    paddingVertical: 20,
   },
   alertIcon: {
     width: 40,
@@ -727,6 +840,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 16,
   },
+  tabletAlertIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 20,
+  },
   alertContent: {
     flex: 1,
   },
@@ -736,13 +855,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
+  tabletAlertTitle: {
+    fontSize: 18,
+    marginBottom: 6,
+  },
   alertSubtitle: {
     fontSize: 14,
     color: '#64748b',
   },
+  tabletAlertSubtitle: {
+    fontSize: 16,
+  },
   activityCard: {
     margin: 20,
     marginTop: 0,
+    marginBottom: 40,
+  },
+  tabletActivityCard: {
+    margin: 24,
+    marginTop: 0,
+    marginBottom: 60,
   },
   activityList: {
     gap: 20,
@@ -751,6 +883,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  tabletActivityItem: {
+    marginBottom: 8,
+  },
   activityIcon: {
     width: 40,
     height: 40,
@@ -758,6 +893,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
+  },
+  tabletActivityIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 20,
   },
   activityContent: {
     flex: 1,
@@ -768,8 +909,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
+  tabletActivityTitle: {
+    fontSize: 18,
+    marginBottom: 6,
+  },
   activityTime: {
     fontSize: 14,
     color: '#64748b',
+  },
+  tabletActivityTime: {
+    fontSize: 16,
   },
 });
