@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { ChevronLeft, MoveHorizontal as MoreHorizontal } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { isTablet } from '@/hooks/useResponsiveStyles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ModernHeaderProps {
   title: string;
@@ -34,6 +35,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   onBackPress,
 }) => {
   const isTabletDevice = isTablet();
+  const insets = useSafeAreaInsets();
 
   const renderContent = () => (
     <Animated.View entering={FadeInDown.duration(600)} style={styles.content}>
@@ -126,6 +128,15 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
     return 'transparent';
   };
 
+  // Calculate proper padding based on platform and safe area
+  const getTopPadding = () => {
+    if (Platform.OS === 'ios') {
+      return 0; // SafeAreaView will handle this
+    } else {
+      return StatusBar.currentHeight || 0;
+    }
+  };
+
   if (variant === 'gradient' || variant === 'default') {
     return (
       <>
@@ -140,6 +151,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
           end={{ x: 1, y: 1 }}
           style={[
             styles.container, 
+            { paddingTop: getTopPadding() + (Platform.OS === 'ios' ? insets.top : 10) },
             isTabletDevice && styles.tabletContainer
           ]}
         >
@@ -160,6 +172,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
         {Platform.OS === 'ios' ? (
           <BlurView intensity={80} style={[
             styles.container, 
+            { paddingTop: insets.top },
             isTabletDevice && styles.tabletContainer
           ]}>
             <View style={styles.glassOverlay}>
@@ -171,6 +184,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
           <View style={[
             styles.container, 
             styles.glassContainer,
+            { paddingTop: getTopPadding() + 10 },
             isTabletDevice && styles.tabletContainer
           ]}>
             {renderContent()}
@@ -190,6 +204,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
         <View style={[
           styles.container, 
           styles.minimal,
+          { paddingTop: Platform.OS === 'ios' ? insets.top : getTopPadding() + 10 },
           isTabletDevice && styles.tabletContainer
         ]}>
           {renderContent()}
@@ -208,6 +223,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
       <View style={[
         styles.container, 
         styles.default,
+        { paddingTop: Platform.OS === 'ios' ? insets.top : getTopPadding() + 10 },
         isTabletDevice && styles.tabletContainer
       ]}>
         {renderContent()}
@@ -218,12 +234,10 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: Platform.OS === 'ios' ? 50 : (StatusBar.currentHeight || 0) + 10,
     paddingBottom: 16,
     paddingHorizontal: 20,
   },
   tabletContainer: {
-    paddingTop: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
     paddingBottom: 24,
     paddingHorizontal: 32,
   },
