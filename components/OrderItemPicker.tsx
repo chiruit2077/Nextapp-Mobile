@@ -7,7 +7,7 @@ import {
   Image,
   Platform,
 } from 'react-native';
-import { CheckCircle, Circle, Package, MapPin, AlertCircle } from 'lucide-react-native';
+import { CircleCheck as CheckCircle, Circle, Package, MapPin, CircleAlert as AlertCircle } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { isTablet } from '@/hooks/useResponsiveStyles';
 
