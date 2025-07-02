@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "NextApp Auto Parts CRM",
+    "slug": "nextapp-autoparts-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "nextapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nextapp.autoparts"
+    },
+    "android": {
+      "package": "com.nextapp.autoparts"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-web-browser",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "25a46f86-f771-4bb0-ba64-b8138cccfb68"
+      }
+    }
+  }
+}
