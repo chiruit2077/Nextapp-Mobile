@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ViewStyle, TouchableOpacity, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { isTablet } from '@/hooks/useResponsiveStyles';
 
 interface ModernCardProps {
   children: React.ReactNode;
@@ -18,11 +19,36 @@ export const ModernCard: React.FC<ModernCardProps> = ({
   gradientColors = ['#667eea', '#764ba2'],
 }) => {
   const Component = onPress ? TouchableOpacity : View;
+  const isTabletDevice = isTablet();
+
+  // Platform-specific shadow styles
+  const getShadowStyle = () => {
+    if (Platform.OS === 'ios') {
+      return {
+        shadowColor: '#000',
+        shadowOffset: {
+          width: 0,
+          height: isTabletDevice ? 6 : 4,
+        },
+        shadowOpacity: isTabletDevice ? 0.15 : 0.1,
+        shadowRadius: isTabletDevice ? 16 : 12,
+      };
+    } else {
+      return {
+        elevation: isTabletDevice ? 10 : 8,
+      };
+    }
+  };
 
   if (variant === 'gradient') {
     return (
       <Component
-        style={[styles.container, style]}
+        style={[
+          styles.container, 
+          getShadowStyle(),
+          isTabletDevice && styles.tabletContainer,
+          style
+        ]}
         onPress={onPress}
         activeOpacity={onPress ? 0.8 : 1}
       >
@@ -30,7 +56,10 @@ export const ModernCard: React.FC<ModernCardProps> = ({
           colors={gradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.gradient}
+          style={[
+            styles.gradient,
+            isTabletDevice && styles.tabletGradient
+          ]}
         >
           {children}
         </LinearGradient>
@@ -44,6 +73,8 @@ export const ModernCard: React.FC<ModernCardProps> = ({
         styles.container,
         variant === 'glass' && styles.glass,
         variant === 'elevated' && styles.elevated,
+        getShadowStyle(),
+        isTabletDevice && styles.tabletContainer,
         style,
       ]}
       onPress={onPress}
@@ -60,18 +91,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
+    // Shadow styles are applied dynamically based on platform
+  },
+  tabletContainer: {
+    borderRadius: 24,
+    padding: 24,
+    marginVertical: 12,
   },
   gradient: {
     borderRadius: 20,
     padding: 20,
+  },
+  tabletGradient: {
+    borderRadius: 24,
+    padding: 24,
   },
   glass: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -80,9 +113,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   elevated: {
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 12,
     backgroundColor: '#FFFFFF',
   },
 });
