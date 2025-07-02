@@ -4,7 +4,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { ChevronLeft, MoveHorizontal as MoreHorizontal } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { isTablet } from '@/hooks/useResponsiveStyles';
 
 interface ModernHeaderProps {
   title: string;
@@ -29,38 +28,32 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   subtitle,
   leftButton,
   rightButton,
-  variant = 'gradient',
+  variant = 'default',
   showBackButton = false,
   onBackPress,
 }) => {
-  const isTabletDevice = isTablet();
-
   const renderContent = () => (
     <Animated.View entering={FadeInDown.duration(600)} style={styles.content}>
       {/* Left Section */}
       <View style={styles.leftSection}>
         {showBackButton && onBackPress && (
           <TouchableOpacity
-            style={[styles.backButton, isTabletDevice && styles.tabletBackButton]}
+            style={styles.backButton}
             onPress={onBackPress}
             activeOpacity={0.7}
-            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
-            <ChevronLeft size={isTabletDevice ? 28 : 24} color="#FFFFFF" />
+            <ChevronLeft size={24} color="#FFFFFF" />
           </TouchableOpacity>
         )}
         {typeof leftButton === 'object' && leftButton !== null && 'onPress' in leftButton ? (
           <TouchableOpacity
-            style={[styles.actionButton, isTabletDevice && styles.tabletActionButton]}
+            style={styles.actionButton}
             onPress={leftButton.onPress}
             activeOpacity={0.7}
-            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
-            {leftButton.icon || <ChevronLeft size={isTabletDevice ? 28 : 24} color="#FFFFFF" />}
+            {leftButton.icon || <ChevronLeft size={24} color="#FFFFFF" />}
             {leftButton.title && (
-              <Text style={[styles.buttonText, isTabletDevice && styles.tabletButtonText]}>
-                {leftButton.title}
-              </Text>
+              <Text style={styles.buttonText}>{leftButton.title}</Text>
             )}
           </TouchableOpacity>
         ) : (
@@ -70,17 +63,11 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
 
       {/* Title Section */}
       <View style={styles.titleSection}>
-        <Text 
-          style={[styles.title, isTabletDevice && styles.tabletTitle]} 
-          numberOfLines={1}
-        >
+        <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
         {subtitle && (
-          <Text 
-            style={[styles.subtitle, isTabletDevice && styles.tabletSubtitle]} 
-            numberOfLines={1}
-          >
+          <Text style={styles.subtitle} numberOfLines={1}>
             {subtitle}
           </Text>
         )}
@@ -90,24 +77,21 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
       <View style={styles.rightSection}>
         {rightButton && (
           <TouchableOpacity
-            style={[styles.actionButton, isTabletDevice && styles.tabletActionButton]}
+            style={styles.actionButton}
             onPress={rightButton.onPress}
             activeOpacity={0.7}
-            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
           >
             {rightButton.title && (
-              <Text style={[styles.buttonText, isTabletDevice && styles.tabletButtonText]}>
-                {rightButton.title}
-              </Text>
+              <Text style={styles.buttonText}>{rightButton.title}</Text>
             )}
-            {rightButton.icon || <MoreHorizontal size={isTabletDevice ? 28 : 24} color="#FFFFFF" />}
+            {rightButton.icon || <MoreHorizontal size={24} color="#FFFFFF" />}
           </TouchableOpacity>
         )}
       </View>
     </Animated.View>
   );
 
-  if (variant === 'gradient' || variant === 'default') {
+  if (variant === 'gradient') {
     return (
       <>
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
@@ -115,10 +99,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
           colors={['#667eea', '#764ba2']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[
-            styles.container, 
-            isTabletDevice && styles.tabletContainer
-          ]}
+          style={styles.container}
         >
           {renderContent()}
         </LinearGradient>
@@ -130,10 +111,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
     return (
       <>
         <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-        <BlurView intensity={80} style={[
-          styles.container,
-          isTabletDevice && styles.tabletContainer
-        ]}>
+        <BlurView intensity={80} style={styles.container}>
           <View style={styles.glassOverlay}>
             {renderContent()}
           </View>
@@ -146,11 +124,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
     return (
       <>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-        <View style={[
-          styles.container, 
-          styles.minimal,
-          isTabletDevice && styles.tabletContainer
-        ]}>
+        <View style={[styles.container, styles.minimal]}>
           {renderContent()}
         </View>
       </>
@@ -160,11 +134,7 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#667eea" />
-      <View style={[
-        styles.container, 
-        styles.default,
-        isTabletDevice && styles.tabletContainer
-      ]}>
+      <View style={[styles.container, styles.default]}>
         {renderContent()}
       </View>
     </>
@@ -173,14 +143,9 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: Platform.OS === 'ios' ? 10 : 20,
-    paddingBottom: 20,
+    paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 0 + 10,
+    paddingBottom: 16,
     paddingHorizontal: 20,
-  },
-  tabletContainer: {
-    paddingTop: Platform.OS === 'ios' ? 16 : 28,
-    paddingBottom: 28,
-    paddingHorizontal: 32,
   },
   default: {
     backgroundColor: '#667eea',
@@ -221,23 +186,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabletBackButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  tabletActionButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   buttonText: {
     fontSize: 16,
@@ -245,27 +200,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginHorizontal: 4,
   },
-  tabletButtonText: {
-    fontSize: 18,
-    marginHorizontal: 6,
-  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
   },
-  tabletTitle: {
-    fontSize: 28,
-  },
   subtitle: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
     marginTop: 2,
-  },
-  tabletSubtitle: {
-    fontSize: 16,
-    marginTop: 4,
   },
 });

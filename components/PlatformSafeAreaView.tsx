@@ -1,76 +1,67 @@
 import React from 'react';
-import { View, StyleSheet, Platform, StatusBar } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, StyleSheet, StatusBar, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { isTablet } from '@/hooks/useResponsiveStyles';
 
 interface PlatformSafeAreaViewProps {
   children: React.ReactNode;
   style?: any;
-  edges?: Array<'top' | 'right' | 'bottom' | 'left'>;
-  gradientHeader?: boolean;
+  gradient?: boolean;
   gradientColors?: string[];
 }
 
 export const PlatformSafeAreaView: React.FC<PlatformSafeAreaViewProps> = ({
   children,
   style,
-  edges = ['top', 'right', 'bottom', 'left'],
-  gradientHeader = false,
+  gradient = false,
   gradientColors = ['#667eea', '#764ba2'],
 }) => {
-  const insets = useSafeAreaInsets();
-  const isTabletDevice = isTablet();
-  
-  // If gradient header is enabled, render a LinearGradient at the top
-  if (gradientHeader) {
+  if (Platform.OS === 'web') {
+    if (gradient) {
+      return (
+        <>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+          <LinearGradient
+            colors={gradientColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.container, style]}
+          >
+            {children}
+          </LinearGradient>
+        </>
+      );
+    }
+    
     return (
       <View style={[styles.container, style]}>
-        {/* Gradient status bar background */}
-        <LinearGradient
-          colors={gradientColors}
-          style={[
-            styles.statusBarGradient,
-            { height: Platform.OS === 'ios' ? insets.top : StatusBar.currentHeight || 0 }
-          ]}
-        />
-        
-        {/* Main content */}
-        {Platform.OS === 'ios' ? (
-          <SafeAreaView style={styles.contentContainer} edges={edges.filter(edge => edge !== 'top')}>
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-            {children}
-          </SafeAreaView>
-        ) : (
-          <View style={styles.contentContainer}>
-            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-            {children}
-          </View>
-        )}
+        {children}
       </View>
     );
   }
 
-  // Standard safe area view without gradient
-  if (Platform.OS === 'ios') {
+  if (gradient) {
     return (
-      <SafeAreaView style={[styles.container, style]} edges={edges}>
-        {children}
-      </SafeAreaView>
+      <>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.container, style]}
+        >
+          <SafeAreaView style={styles.safeArea} edges={['top', 'right', 'left']}>
+            {children}
+          </SafeAreaView>
+        </LinearGradient>
+      </>
     );
   }
 
-  // For Android, use View with StatusBar height padding
   return (
-    <View 
-      style={[
-        styles.container, 
-        { paddingTop: edges.includes('top') ? StatusBar.currentHeight || 0 : 0 },
-        style
-      ]}
-    >
+    <SafeAreaView style={[styles.container, style]} edges={['top', 'right', 'left']}>
       {children}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -78,14 +69,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  contentContainer: {
+  safeArea: {
     flex: 1,
   },
-  statusBarGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  }
 });
