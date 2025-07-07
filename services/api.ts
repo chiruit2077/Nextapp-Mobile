@@ -504,28 +504,8 @@ class ApiService {
     const response = await this.api.get(`/orders/${id}`);
     const data = this.extractResponseData(response);
     
-    // Transform single order response
-    if (data) {
-      return {
-        ...data,
-        id: data.Order_Id,
-        orderNumber: data.CRMOrderId,
-        retailerId: data.Retailer_Id,
-        status: data.Order_Status,
-        totalAmount: this.calculateOrderTotal(data),
-        orderDate: new Date(data.Place_Date).toISOString(),
-        deliveryDate: data.Delivered_Date ? new Date(data.Delivered_Date).toISOString() : undefined,
-        notes: data.Remark,
-        urgent: data.Urgent_Status === 1,
-        branch: data.Branch_Name,
-        retailer: {
-          businessName: data.Retailer_Name,
-          contactName: data.Contact_Person !== '0' ? data.Contact_Person : undefined,
-        },
-        items: [], // Items would come from a separate API call
-      };
-    }
-    
+    // Return the raw API response to let the component handle transformation
+    // This ensures all API fields including items are preserved
     return data;
   }
 

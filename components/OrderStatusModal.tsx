@@ -28,7 +28,7 @@ const validTransitions: Record<string, string[]> = {
   New: ['Pending', 'Hold', 'Cancelled'],
   Pending: ['Processing', 'Hold', 'Cancelled'],
   Processing: ['Picked', 'Hold', 'Cancelled'],
-  Hold: ['New', 'Pending', 'Processing', 'Picked', 'Dispatched', 'Completed', 'Cancelled'],
+  Hold: ['New', 'Pending', 'Processing', 'Cancelled'],
   Picked: ['Dispatched', 'Hold'],
   Dispatched: ['Completed'],
   Completed: [],

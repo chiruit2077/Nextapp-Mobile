@@ -50,9 +50,62 @@ import { PlatformSafeAreaView } from '@/components/PlatformSafeAreaView';
 import { ModernHeader } from '@/components/ModernHeader';
 import { ModernButton } from '@/components/ModernButton';
 
-interface OrderDetails extends Order {
+interface OrderDetails {
+  // Core order fields
+  id?: number;
+  orderNumber?: string;
+  retailerId?: number;
+  status?: string;
+  totalAmount?: number;
+  orderDate?: string;
+  deliveryDate?: string;
+  notes?: string;
+  urgent?: boolean;
+  branch?: string;
+  retailer?: {
+    businessName?: string;
+    contactName?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  };
   items?: OrderItem[];
   statusHistory?: StatusHistoryItem[];
+  // API response fields
+  Order_Id?: number;
+  CRMOrderId?: string;
+  Retailer_Id?: number;
+  Transport_Id?: number | null;
+  TransportBy?: string | null;
+  Place_By?: string;
+  Place_Date?: number;
+  Confirm_By?: string | null;
+  Confirm_Date?: number | null;
+  Pick_By?: string | null;
+  Pick_Date?: number | null;
+  Pack_By?: string | null;
+  Checked_By?: string | null;
+  Pack_Date?: number | null;
+  Delivered_By?: string | null;
+  Delivered_Date?: number | null;
+  Order_Status?: string;
+  Branch?: string;
+  DispatchId?: string | null;
+  Remark?: string;
+  PO_Number?: string;
+  PO_Date?: number;
+  Urgent_Status?: number | boolean;
+  Longitude?: number | null;
+  IsSync?: number | boolean;
+  Latitude?: number | null;
+  Last_Sync?: number;
+  created_at?: string;
+  updated_at?: string;
+  Retailer_Name?: string;
+  Contact_Person?: string;
+  Retailer_Email?: string;
+  Branch_Name?: string;
+  Company_Name?: string;
 }
 
 interface OrderItem {
@@ -150,6 +203,8 @@ export default function OrderDetailsScreen() {
       setError(null);
       const response = await apiService.getOrder(parseInt(id));
       
+      console.log('📦 Raw API Response:', JSON.stringify(response, null, 2));
+      
       // Transform API response to match our OrderDetails interface
       const transformedOrder: OrderDetails = {
         ...response,
@@ -158,7 +213,7 @@ export default function OrderDetailsScreen() {
         retailerId: response.Retailer_Id,
         status: response.Order_Status,
         totalAmount: calculateOrderTotal(response),
-        orderDate: new Date(response.Place_Date).toISOString(),
+        orderDate: response.Place_Date ? new Date(response.Place_Date).toISOString() : response.created_at,
         deliveryDate: response.Delivered_Date ? new Date(response.Delivered_Date).toISOString() : undefined,
         notes: response.Remark,
         urgent: response.Urgent_Status === 1,
@@ -171,74 +226,78 @@ export default function OrderDetailsScreen() {
       };
       
       // Transform order items if they exist
-      if (response.items && Array.isArray(response.items)) {
-        transformedOrder.items = response.items.map(item => ({
-          id: item.Order_Item_Id || 0,
-          partNumber: item.Part_Admin || '',
-          partName: item.Part_Salesman || item.Part_Name || '',
-          quantity: item.Order_Qty || 0,
-          unitPrice: item.MRP || 0,
-          totalPrice: (item.MRP || 0) * (item.Order_Qty || 0),
-          pickedQuantity: item.Dispatch_Qty || 0,
-          picked: item.OrderItemStatus === 'Picked' || false,
-          basicDiscount: item.Discount || 0,
-          schemeDiscount: item.SchemeDisc || 0,
-          additionalDiscount: item.AdditionalDisc || 0,
-          urgent: item.Urgent_Status === 1,
-          // Include original API fields
-          ...item
-        }));
+      if (response.items && Array.isArray(response.items) && response.items.length > 0) {
+        console.log('📦 Processing items:', response.items);
+        transformedOrder.items = response.items.map((item: any) => {
+          console.log('📦 Processing item:', item);
+          
+          // Generate deterministic rack location based on part number
+          const generateRackLocation = (partNumber: string) => {
+            if (!partNumber) return undefined;
+            const hash = partNumber.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+            const rackNumber = (hash % 10) + 1;
+            const sectionLetter = String.fromCharCode(65 + (hash % 5));
+            return `${rackNumber}-${sectionLetter}`;
+          };
+          
+          return {
+            id: item.Order_Item_Id,
+            partNumber: item.Part_Admin,
+            partName: item.Part_Name || item.Part_Salesman,
+            quantity: item.Order_Qty,
+            unitPrice: item.MRP,
+            totalPrice: item.ItemAmount,
+            pickedQuantity: item.Dispatch_Qty || 0,
+            picked: item.OrderItemStatus?.toLowerCase() === 'picked' || Boolean(item.Pick_Date && item.Pick_By),
+            basicDiscount: item.Discount || 0,
+            schemeDiscount: item.SchemeDisc || 0,
+            additionalDiscount: item.AdditionalDisc || 0,
+            urgent: item.Urgent_Status === 1,
+            rackLocation: generateRackLocation(item.Part_Admin),
+            part: {
+              name: item.Part_Name || item.Part_Salesman,
+              category: item.Part_Admin?.split('-')[1] || 'General',
+              image: item.Part_Image,
+            },
+            // Keep all original API fields for reference
+            Order_Item_Id: item.Order_Item_Id,
+            Order_Id: item.Order_Id,
+            Order_Srl: item.Order_Srl,
+            Part_Admin: item.Part_Admin,
+            Part_Salesman: item.Part_Salesman,
+            Order_Qty: item.Order_Qty,
+            Dispatch_Qty: item.Dispatch_Qty,
+            Pick_Date: item.Pick_Date,
+            Pick_By: item.Pick_By,
+            OrderItemStatus: item.OrderItemStatus,
+            PlaceDate: item.PlaceDate,
+            RetailerId: item.RetailerId,
+            ItemAmount: item.ItemAmount,
+            SchemeDisc: item.SchemeDisc,
+            AdditionalDisc: item.AdditionalDisc,
+            Discount: item.Discount,
+            MRP: item.MRP,
+            FirstOrderDate: item.FirstOrderDate,
+            Urgent_Status: item.Urgent_Status,
+            Last_Sync: item.Last_Sync,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+            Part_Name: item.Part_Name,
+            Part_Image: item.Part_Image,
+          };
+        });
       } else {
-        // If no items in API response, create mock items for demonstration
-        transformedOrder.items = [
-          {
-            id: 1,
-            partNumber: 'BP-001',
-            partName: 'Brake Pads - Front Set',
-            quantity: 2,
-            unitPrice: 89.99,
-            totalPrice: 179.98,
-            pickedQuantity: 0,
-            basicDiscount: 5,
-            schemeDiscount: 2,
-            additionalDiscount: 0,
-            urgent: false,
-            picked: false,
-            rackLocation: 'A-12-B',
-            part: {
-              name: 'Brake Pads - Front Set',
-              category: 'Brake System',
-              image: 'https://images.pexels.com/photos/3807277/pexels-photo-3807277.jpeg?auto=compress&cs=tinysrgb&w=400',
-            },
-          },
-          {
-            id: 2,
-            partNumber: 'OIL-002',
-            partName: 'Engine Oil 5W-30',
-            quantity: 4,
-            unitPrice: 24.99,
-            totalPrice: 99.96,
-            pickedQuantity: 0,
-            basicDiscount: 3,
-            schemeDiscount: 0,
-            additionalDiscount: 1,
-            urgent: true,
-            picked: false,
-            rackLocation: 'C-05-D',
-            part: {
-              name: 'Engine Oil 5W-30',
-              category: 'Engine',
-              image: 'https://images.pexels.com/photos/4489702/pexels-photo-4489702.jpeg?auto=compress&cs=tinysrgb&w=400',
-            },
-          },
-        ];
+        console.log('📦 No items found in response');
+        transformedOrder.items = [];
       }
       
       // Generate status history from order data
       transformedOrder.statusHistory = generateStatusHistory(response);
       
+      console.log('📦 Transformed Order:', JSON.stringify(transformedOrder, null, 2));
       setOrder(transformedOrder);
     } catch (error: any) {
+      console.error('📦 Error loading order:', error);
       setError(error.error || 'Failed to load order details');
     } finally {
       setIsLoading(false);
@@ -247,89 +306,33 @@ export default function OrderDetailsScreen() {
 
   // Generate status history from order data
   const generateStatusHistory = (orderData: any): StatusHistoryItem[] => {
-    const history: StatusHistoryItem[] = [];
-    
-    // Created/New status
-    if (orderData.created_at) {
-      history.push({
-        status: 'New',
-        timestamp: orderData.created_at,
-        updatedBy: orderData.Place_By || 'System',
-        notes: 'Order created',
-      });
+    // Only use status_history from API, do not push any status from order fields
+    if (Array.isArray(orderData.status_history) && orderData.status_history.length > 0) {
+      return orderData.status_history.map((entry: any) => ({
+        status: entry.status,
+        timestamp: typeof entry.timestamp === 'number'
+          ? new Date(entry.timestamp).toISOString()
+          : entry.timestamp,
+        updatedBy: entry.updated_by_role
+          ? `${entry.updated_by_role[0].toUpperCase()}${entry.updated_by_role.slice(1)}`
+          : 'User',
+        notes: entry.notes,
+      }));
     }
-    
-    // Processing status
-    if (orderData.Confirm_By && orderData.Confirm_Date) {
-      history.push({
-        status: 'Processing',
-        timestamp: new Date(orderData.Confirm_Date).toISOString(),
-        updatedBy: orderData.Confirm_By,
-        notes: 'Order confirmed and ready for processing',
-      });
-    }
-    
-    // Picked status
-    if (orderData.Pick_By && orderData.Pick_Date) {
-      history.push({
-        status: 'Picked',
-        timestamp: new Date(orderData.Pick_Date).toISOString(),
-        updatedBy: orderData.Pick_By,
-        notes: 'Order items picked from inventory',
-      });
-    }
-    
-    // Dispatched status (if applicable)
-    if (orderData.Pack_By && orderData.Pack_Date) {
-      history.push({
-        status: 'Dispatched',
-        timestamp: new Date(orderData.Pack_Date).toISOString(),
-        updatedBy: orderData.Pack_By,
-        notes: 'Order packed and dispatched',
-      });
-    }
-    
-    // Delivered/Completed status
-    if (orderData.Delivered_By && orderData.Delivered_Date) {
-      history.push({
-        status: 'Completed',
-        timestamp: new Date(orderData.Delivered_Date).toISOString(),
-        updatedBy: orderData.Delivered_By,
-        notes: 'Order delivered successfully',
-      });
-    }
-    
-    // If current status doesn't match any of the above, add it
-    const currentStatus = orderData.Order_Status;
-    const hasCurrentStatus = history.some(item => item.status === currentStatus);
-    
-    if (!hasCurrentStatus && currentStatus) {
-      history.push({
-        status: currentStatus,
-        timestamp: orderData.updated_at,
-        updatedBy: user?.name || 'System',
-        notes: orderData.Remark || `Status updated to ${currentStatus}`,
-      });
-    }
-    
-    // Sort by timestamp
-    return history.sort((a, b) => 
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+    // If no status_history, return empty array
+    return [];
   };
 
   // Calculate order total from items
   const calculateOrderTotal = (orderData: any): number => {
     if (orderData.items && Array.isArray(orderData.items)) {
-      return orderData.items.reduce((sum, item) => {
-        const itemPrice = item.MRP || 0;
-        const quantity = item.Order_Qty || 0;
-        return sum + (itemPrice * quantity);
+      return orderData.items.reduce((sum: number, item: any) => {
+        return sum + (item.ItemAmount || 0);
       }, 0);
     }
     
-    // If no items, return a mock value
-    return Math.floor(Math.random() * 5000) + 100;
+    // If no items, return 0
+    return 0;
   };
 
   const getStatusInfo = (status: string) => {
@@ -439,20 +442,20 @@ export default function OrderDetailsScreen() {
   const canEditOrder = () => {
     if (!order || !canEdit) return false;
     const editableStatuses = ['new', 'pending'];
-    return editableStatuses.includes((order.status || order.Order_Status || 'unknown').toLowerCase());
+    return editableStatuses.includes((order.Order_Status || 'unknown').toLowerCase());
   };
 
   const canCancelOrder = () => {
     if (!order || !canCancel) return false;
     const cancellableStatuses = ['new', 'pending', 'processing'];
-    return cancellableStatuses.includes((order.status || order.Order_Status || 'unknown').toLowerCase());
+    return cancellableStatuses.includes((order.Order_Status || 'unknown').toLowerCase());
   };
 
   const handleUpdateStatus = async (newStatus: string, notes: string) => {
     if (!order) return;
     
     // Special validation for Processing to Picked transition
-    if ((order.status || order.Order_Status || '').toLowerCase() === 'processing' && 
+    if ((order.Order_Status || '').toLowerCase() === 'processing' && 
         newStatus.toLowerCase() === 'picked') {
       
       // Check if all items are picked
@@ -467,7 +470,11 @@ export default function OrderDetailsScreen() {
 
     setIsUpdatingStatus(true);
     try {
-      const orderId = order.id || order.Order_Id;
+      const orderId = order.Order_Id;
+      if (!orderId) {
+        showToast('Invalid order ID', 'error');
+        return;
+      }
       await apiService.updateOrderStatus(orderId, newStatus, notes);
       
       // Update local state
@@ -533,7 +540,11 @@ export default function OrderDetailsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const orderId = order!.id || order!.Order_Id;
+              const orderId = order!.Order_Id;
+              if (!orderId) {
+                showToast('Invalid order ID', 'error');
+                return;
+              }
               await apiService.updateOrderStatus(orderId, 'Cancelled');
               setOrder(prev => prev ? { ...prev, status: 'Cancelled', Order_Status: 'Cancelled' } : null);
               showToast('Order has been cancelled', 'success');
@@ -583,18 +594,18 @@ export default function OrderDetailsScreen() {
     return <ErrorMessage error="Order not found" />;
   }
 
-  const statusInfo = getStatusInfo(order.status || order.Order_Status);
+  const statusInfo = getStatusInfo(order.Order_Status || 'unknown');
   const subtotal = calculateOrderSubtotal();
   const tax = subtotal * 0.08; // 8% tax
   const total = subtotal + tax;
-  const orderNumber = order.orderNumber || order.CRMOrderId;
-  const retailerName = order.retailer?.businessName || order.Retailer_Name;
-  const contactPerson = order.retailer?.contactName || order.Contact_Person;
-  const orderDate = order.orderDate || order.created_at;
-  const branchName = order.branch || order.Branch_Name;
+  const orderNumber = order.CRMOrderId;
+  const retailerName = order.Retailer_Name;
+  const contactPerson = order.Contact_Person;
+  const orderDate = order.Place_Date || order.created_at;
+  const branchName = order.Branch_Name;
   const companyName = order.Company_Name;
-  const isUrgent = order.urgent || order.Urgent_Status === 1;
-  const currentStatus = (order.status || order.Order_Status || '').toLowerCase();
+  const isUrgent = order.Urgent_Status === 1;
+  const currentStatus = (order.Order_Status || '').toLowerCase();
   const showPickingInterface = currentStatus === 'processing' && canUpdateStatus && user?.role === 'storeman';
 
   return (
@@ -604,17 +615,21 @@ export default function OrderDetailsScreen() {
         title={`Order #${orderNumber}`}
         subtitle={`${order.items?.length || 0} item${(order.items?.length || 0) !== 1 ? 's' : ''}`}
         leftButton={{
-          icon: <ArrowLeft size={24} color="#FFFFFF" />,
+          icon: <ArrowLeft size={24} color="#FFFFFF" />, 
           onPress: handleBackPress
         }}
         rightButton={{
-          icon: <Download size={20} color="#FFFFFF" />,
+          icon: <Download size={20} color="#FFFFFF" />, 
           onPress: handleDownloadInvoice
         }}
         variant="gradient"
       />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Order Status */}
         <Animated.View entering={FadeInUp.delay(0).duration(600)} style={styles.statusCard}>
           <View style={[styles.statusHeader, { backgroundColor: statusInfo.bgColor }]}>
@@ -660,7 +675,7 @@ export default function OrderDetailsScreen() {
             <View style={styles.summaryDetails}>
               <View style={styles.summaryRow}>
                 <Calendar size={16} color="rgba(255, 255, 255, 0.8)" />
-                <Text style={styles.summaryText}>Ordered: {formatDate(orderDate)}</Text>
+                <Text style={styles.summaryText}>Ordered: {formatDate(orderDate || new Date().toISOString())}</Text>
               </View>
               {order.deliveryDate && (
                 <View style={styles.summaryRow}>
@@ -703,30 +718,10 @@ export default function OrderDetailsScreen() {
               {contactPerson && contactPerson !== '0' && (
                 <Text style={styles.contactName}>{contactPerson}</Text>
               )}
-              {order.retailer?.email && (
+              {order.Retailer_Email && order.Retailer_Email !== '0' && (
                 <View style={styles.contactRow}>
                   <Mail size={14} color="#64748b" />
-                  <Text style={styles.contactText}>{order.retailer.email}</Text>
-                </View>
-              )}
-              {order.retailer?.phone && (
-                <View style={styles.contactRow}>
-                  <Phone size={14} color="#64748b" />
-                  <Text style={styles.contactText}>{order.retailer.phone}</Text>
-                </View>
-              )}
-              {order.retailer?.address && (
-                <View style={styles.contactRow}>
-                  <MapPin size={14} color="#64748b" />
-                  <Text style={styles.contactText}>{order.retailer.address}</Text>
-                </View>
-              )}
-              {order.retailer?.creditLimit && (
-                <View style={styles.contactRow}>
-                  <DollarSign size={14} color="#059669" />
-                  <Text style={[styles.contactText, { color: '#059669', fontWeight: '600' }]}>
-                    Credit Limit: {formatCurrency(order.retailer.creditLimit)}
-                  </Text>
+                  <Text style={styles.contactText}>{order.Retailer_Email}</Text>
                 </View>
               )}
             </View>
@@ -781,88 +776,98 @@ export default function OrderDetailsScreen() {
 
         {/* Order Items */}
         <Animated.View entering={FadeInUp.delay(600).duration(600)} style={styles.itemsCard}>
-          <Text style={styles.sectionTitle}>Order Items</Text>
-          {order.items && order.items.map((item, index) => (
-            <View key={item.id} style={styles.orderItem}>
-              <View style={styles.itemImageContainer}>
-                {item.part?.image ? (
-                  <Image source={{ uri: item.part.image }} style={styles.itemImage} />
-                ) : (
-                  <LinearGradient
-                    colors={['#667eea', '#764ba2']}
-                    style={styles.itemImagePlaceholder}
-                  >
-                    <Package size={20} color="#FFFFFF" />
-                  </LinearGradient>
-                )}
-                {item.urgent && (
-                  <View style={styles.itemUrgentBadge}>
-                    <Star size={10} color="#ef4444" />
-                  </View>
-                )}
+          <Text style={styles.sectionTitle}>Order Items ({order.items?.length || 0})</Text>
+          
+          {/* Debug Information */}
+         
+          
+          {order.items && order.items.length > 0 ? (
+            order.items.map((item, index) => (
+              <View key={item.id} style={styles.orderItem}>
+                <View style={styles.itemImageContainer}>
+                  {item.part?.image ? (
+                    <Image source={{ uri: item.part.image }} style={styles.itemImage} />
+                  ) : (
+                    <LinearGradient
+                      colors={['#667eea', '#764ba2']}
+                      style={styles.itemImagePlaceholder}
+                    >
+                      <Package size={20} color="#FFFFFF" />
+                    </LinearGradient>
+                  )}
+                  {item.urgent && (
+                    <View style={styles.itemUrgentBadge}>
+                      <Star size={10} color="#ef4444" />
+                    </View>
+                  )}
+                </View>
+                
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName} numberOfLines={2}>
+                    {item.partName || item.part?.name || item.Part_Name || 'Unknown Part'}
+                  </Text>
+                  <Text style={styles.itemNumber}>#{item.partNumber || item.Part_Admin}</Text>
+                  
+                  {item.part?.category && (
+                    <Text style={styles.itemCategory}>{item.part.category}</Text>
+                  )}
+                  
+                  {/* Picked Status */}
+                  {item.picked && (
+                    <View style={styles.pickedStatusContainer}>
+                      <CheckCircle size={12} color="#10b981" />
+                      <Text style={styles.pickedStatusText}>
+                        Picked: {item.pickedQuantity || item.quantity}/{item.quantity}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {/* Discount Information */}
+                  {((item.basicDiscount || 0) + (item.schemeDiscount || 0) + (item.additionalDiscount || 0)) > 0 && (
+                    <View style={styles.discountInfo}>
+                      <Text style={styles.discountText}>
+                        Discounts: {item.basicDiscount || 0}% + {item.schemeDiscount || 0}% + {item.additionalDiscount || 0}%
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                
+                <View style={styles.itemPricing}>
+                  <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
+                  <Text style={styles.itemUnitPrice}>{formatCurrency(item.unitPrice || item.MRP || 0)} each</Text>
+                  <Text style={styles.itemTotalPrice}>{formatCurrency(item.totalPrice || item.ItemAmount || 0)}</Text>
+                </View>
               </View>
-              
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName} numberOfLines={2}>
-                  {item.partName || item.part?.name || item.Part_Name || 'Unknown Part'}
-                </Text>
-                <Text style={styles.itemNumber}>#{item.partNumber || item.Part_Admin}</Text>
-                
-                {item.part?.category && (
-                  <Text style={styles.itemCategory}>{item.part.category}</Text>
-                )}
-                
-                {/* Rack Location */}
-                {item.rackLocation && (
-                  <View style={styles.rackLocationContainer}>
-                    <MapPin size={12} color="#64748b" />
-                    <Text style={styles.rackLocationText}>Rack: {item.rackLocation}</Text>
-                  </View>
-                )}
-                
-                {/* Picked Status */}
-                {item.picked && (
-                  <View style={styles.pickedStatusContainer}>
-                    <CheckCircle size={12} color="#10b981" />
-                    <Text style={styles.pickedStatusText}>
-                      Picked: {item.pickedQuantity || item.quantity}/{item.quantity}
-                    </Text>
-                  </View>
-                )}
-                
-                {/* Discount Information */}
-                {((item.basicDiscount || 0) + (item.schemeDiscount || 0) + (item.additionalDiscount || 0)) > 0 && (
-                  <View style={styles.discountInfo}>
-                    <Text style={styles.discountText}>
-                      Discounts: {item.basicDiscount || 0}% + {item.schemeDiscount || 0}% + {item.additionalDiscount || 0}%
-                    </Text>
-                  </View>
-                )}
-              </View>
-              
-              <View style={styles.itemPricing}>
-                <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
-                <Text style={styles.itemUnitPrice}>{formatCurrency(item.unitPrice || item.MRP || 0)} each</Text>
-                <Text style={styles.itemTotalPrice}>{formatCurrency(calculateItemTotal(item))}</Text>
-              </View>
+            ))
+          ) : (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Package size={48} color="#94a3b8" />
+              <Text style={{ fontSize: 16, color: '#64748b', marginTop: 12, textAlign: 'center' }}>
+                No items found for this order
+              </Text>
+              <Text style={{ fontSize: 14, color: '#94a3b8', marginTop: 4, textAlign: 'center' }}>
+                Items may not have been loaded or this order has no items
+              </Text>
             </View>
-          ))}
+          )}
           
           {/* Order Totals */}
-          <View style={styles.orderTotals}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Subtotal:</Text>
-              <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
+          {order.items && order.items.length > 0 && (
+            <View style={styles.orderTotals}>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Subtotal:</Text>
+                <Text style={styles.totalValue}>{formatCurrency(subtotal)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Tax (8%):</Text>
+                <Text style={styles.totalValue}>{formatCurrency(tax)}</Text>
+              </View>
+              <View style={[styles.totalRow, styles.grandTotalRow]}>
+                <Text style={styles.grandTotalLabel}>Total:</Text>
+                <Text style={styles.grandTotalValue}>{formatCurrency(total)}</Text>
+              </View>
             </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Tax (8%):</Text>
-              <Text style={styles.totalValue}>{formatCurrency(tax)}</Text>
-            </View>
-            <View style={[styles.totalRow, styles.grandTotalRow]}>
-              <Text style={styles.grandTotalLabel}>Total:</Text>
-              <Text style={styles.grandTotalValue}>{formatCurrency(total)}</Text>
-            </View>
-          </View>
+          )}
         </Animated.View>
 
         {/* Status History */}
@@ -896,37 +901,44 @@ export default function OrderDetailsScreen() {
         )}
 
         {/* Action Buttons */}
-        <Animated.View entering={FadeInUp.delay(1200).duration(600)} style={styles.actionButtons}>
+        <View style={[styles.actionButtons, { marginBottom: 32 }]}> 
           {canEditOrder() && (
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => router.push(`/(tabs)/orders/${order.id || order.Order_Id}?edit=true`)}
+              activeOpacity={0.7}
+              onPress={() => {
+                // Use navigation replace to ensure the edit page loads correctly
+                router.replace(`/(tabs)/orders/${order.id || order.Order_Id}?edit=true`);
+              }}
             >
               <Edit3 size={18} color="#667eea" />
               <Text style={styles.actionButtonText}>Edit Order</Text>
             </TouchableOpacity>
           )}
-          
           {canCancelOrder() && (
             <TouchableOpacity
               style={[styles.actionButton, styles.dangerButton]}
+              activeOpacity={0.7}
               onPress={handleCancelOrder}
             >
               <Trash2 size={18} color="#ef4444" />
               <Text style={[styles.actionButtonText, styles.dangerButtonText]}>Cancel Order</Text>
             </TouchableOpacity>
           )}
-        </Animated.View>
+        </View>
       </ScrollView>
 
       {/* Status Update Modal */}
       <OrderStatusModal
         visible={showStatusModal}
         onClose={() => setShowStatusModal(false)}
-        currentStatus={order.status || order.Order_Status || ''}
+        currentStatus={order.Order_Status || ''}
         onUpdateStatus={handleUpdateStatus}
         isLoading={isUpdatingStatus}
       />
+
+      {/* Add a bottom spacer to avoid overlap with bottom tab bar */}
+      <View style={styles.bottomSpacer} />
     </PlatformSafeAreaView>
   );
 }
@@ -941,6 +953,10 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
+  },
+  bottomSpacer: {
+    height: 32, // Adjust as needed to match tab bar height
+    backgroundColor: 'transparent',
   },
   statusCard: {
     backgroundColor: '#FFFFFF',

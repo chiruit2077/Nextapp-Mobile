@@ -77,7 +77,7 @@ export default function OrdersScreen() {
     try {
       setError(null);
       const response = await apiService.getOrders({ limit: 100 });
-      const orderData = response.data || response.orders || [];
+      const orderData = response.orders || response.data || [];
       
       console.log('📦 Loaded orders:', orderData);
       setOrders(orderData);
@@ -102,17 +102,19 @@ export default function OrdersScreen() {
     if (searchQuery.trim() !== '') {
       filtered = filtered.filter(
         (order) =>
-          (order.orderNumber || order.CRMOrderId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (order.retailer?.businessName || order.Retailer_Name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (order.retailer?.contactName || order.Contact_Person || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (order.status || order.Order_Status || '').toLowerCase().includes(searchQuery.toLowerCase())
+          (order.CRMOrderId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (order.Retailer_Name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (order.Contact_Person || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (order.Order_Status || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (order.PO_Number || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (order.Branch_Name || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Apply status filter
     if (selectedFilter !== 'all') {
       filtered = filtered.filter(order => 
-        (order.status || order.Order_Status || '').toLowerCase() === selectedFilter.toLowerCase()
+        (order.Order_Status || '').toLowerCase() === selectedFilter.toLowerCase()
       );
     }
 
@@ -120,19 +122,19 @@ export default function OrdersScreen() {
     filtered.sort((a, b) => {
       switch (selectedSort) {
         case 'date_desc':
-          const dateA = new Date(a.orderDate || a.created_at).getTime();
-          const dateB = new Date(b.orderDate || b.created_at).getTime();
+          const dateA = new Date(a.Place_Date || a.created_at).getTime();
+          const dateB = new Date(b.Place_Date || b.created_at).getTime();
           return dateB - dateA;
         case 'date_asc':
-          const dateA2 = new Date(a.orderDate || a.created_at).getTime();
-          const dateB2 = new Date(b.orderDate || b.created_at).getTime();
+          const dateA2 = new Date(a.Place_Date || a.created_at).getTime();
+          const dateB2 = new Date(b.Place_Date || b.created_at).getTime();
           return dateA2 - dateB2;
         case 'amount_desc':
           return (b.totalAmount || 0) - (a.totalAmount || 0);
         case 'amount_asc':
           return (a.totalAmount || 0) - (b.totalAmount || 0);
         case 'status':
-          return (a.status || a.Order_Status || '').localeCompare(b.status || b.Order_Status || '');
+          return (a.Order_Status || '').localeCompare(b.Order_Status || '');
         default:
           return 0;
       }
@@ -200,12 +202,19 @@ export default function OrdersScreen() {
           bgColor: '#fee2e2',
           text: 'Cancelled',
         };
+      case 'delivered':
+        return {
+          icon: <CheckCircle size={16} color="#10b981" />,
+          color: '#10b981',
+          bgColor: '#dcfce7',
+          text: 'Delivered',
+        };
       default:
         return {
           icon: <Clock size={16} color="#64748b" />,
           color: '#64748b',
           bgColor: '#f1f5f9',
-          text: 'Unknown',
+          text: status || 'Unknown',
         };
     }
   };
@@ -255,13 +264,13 @@ export default function OrdersScreen() {
   };
 
   const handleOrderPress = (order: Order) => {
-    const orderId = order.id || order.Order_Id;
+    const orderId = order.Order_Id;
     router.push(`/(tabs)/orders/${orderId}`);
   };
 
   const handleQuickAction = (order: Order, action: 'view' | 'edit' | 'cancel' | 'download' | 'status') => {
-    const orderId = order.id || order.Order_Id;
-    const orderNumber = order.orderNumber || order.CRMOrderId;
+    const orderId = order.Order_Id;
+    const orderNumber = order.CRMOrderId;
     
     switch (action) {
       case 'view':
@@ -319,14 +328,14 @@ export default function OrdersScreen() {
     
     setIsUpdatingStatus(true);
     try {
-      const orderId = selectedOrder.id || selectedOrder.Order_Id;
+      const orderId = selectedOrder.Order_Id;
       await apiService.updateOrderStatus(orderId, newStatus, notes);
       
       // Update local state
       setOrders(prevOrders => 
         prevOrders.map(order => 
-          (order.id === orderId || order.Order_Id === orderId) 
-            ? { ...order, status: newStatus, Order_Status: newStatus } 
+          order.Order_Id === orderId 
+            ? { ...order, Order_Status: newStatus } 
             : order
         )
       );
@@ -341,14 +350,15 @@ export default function OrdersScreen() {
   };
 
   const renderOrderItem = ({ item, index }: { item: Order; index: number }) => {
-    const statusInfo = getStatusInfo(item.status || item.Order_Status);
-    const orderNumber = item.orderNumber || item.CRMOrderId;
-    const retailerName = item.retailer?.businessName || item.Retailer_Name;
-    const contactPerson = item.retailer?.contactName || item.Contact_Person;
-    const orderDate = item.orderDate || item.created_at;
-    const branchName = item.branch || item.Branch_Name;
+    const statusInfo = getStatusInfo(item.Order_Status);
+    const orderNumber = item.CRMOrderId;
+    const retailerName = item.Retailer_Name;
+    const contactPerson = item.Contact_Person;
+    const orderDate = item.Place_Date || item.created_at;
+    const branchName = item.Branch_Name;
     const companyName = item.Company_Name;
-    const isUrgent = item.urgent || item.Urgent_Status === 1;
+    const isUrgent = item.Urgent_Status === 1;
+    const placedBy = item.Place_By;
     
     return (
       <Animated.View entering={FadeInUp.delay(index * 50).duration(600)}>
@@ -420,6 +430,14 @@ export default function OrdersScreen() {
                   </Text>
                 </View>
               )}
+              
+              {placedBy && (
+                <View style={styles.placedByInfo}>
+                  <Text style={[styles.placedByText, isTabletDevice && styles.tabletPlacedByText]}>
+                    Placed by: {placedBy}
+                  </Text>
+                </View>
+              )}
             </View>
             
             <View style={styles.orderAmount}>
@@ -475,7 +493,7 @@ export default function OrdersScreen() {
                 <Download size={isTabletDevice ? 20 : 16} color="#f59e0b" />
               </TouchableOpacity>
               
-              {canEditOrders && ['new', 'pending', 'processing'].includes((item.status || item.Order_Status || '').toLowerCase()) && (
+              {canEditOrders && ['new', 'pending', 'processing'].includes((item.Order_Status || '').toLowerCase()) && (
                 <TouchableOpacity
                   style={[styles.quickActionButton, isTabletDevice && styles.tabletQuickActionButton]}
                   onPress={() => handleQuickAction(item, 'cancel')}
@@ -507,9 +525,9 @@ export default function OrdersScreen() {
 
   const renderStats = () => {
     const totalOrders = orders.length;
-    const newOrders = orders.filter(o => (o.status || o.Order_Status || '').toLowerCase() === 'new').length;
-    const processingOrders = orders.filter(o => ['processing', 'picked'].includes((o.status || o.Order_Status || '').toLowerCase())).length;
-    const completedOrders = orders.filter(o => ['completed', 'dispatched'].includes((o.status || o.Order_Status || '').toLowerCase())).length;
+    const newOrders = orders.filter(o => (o.Order_Status || '').toLowerCase() === 'new').length;
+    const processingOrders = orders.filter(o => ['processing', 'picked'].includes((o.Order_Status || '').toLowerCase())).length;
+    const completedOrders = orders.filter(o => ['completed', 'dispatched', 'delivered'].includes((o.Order_Status || '').toLowerCase())).length;
     
     return (
       <View style={[styles.statsContainer, isTabletDevice && styles.tabletStatsContainer]}>
@@ -578,14 +596,15 @@ export default function OrdersScreen() {
 
   const filterOptions = [
     { key: 'all', label: 'All Orders', icon: ShoppingCart, count: orders.length },
-    { key: 'new', label: 'New', icon: Plus, count: orders.filter(o => (o.status || o.Order_Status || '').toLowerCase() === 'new').length },
-    { key: 'pending', label: 'Pending', icon: Clock, count: orders.filter(o => (o.status || o.Order_Status || '').toLowerCase() === 'pending').length },
-    { key: 'processing', label: 'Processing', icon: Package, count: orders.filter(o => (o.status || o.Order_Status || '').toLowerCase() === 'processing').length },
-    { key: 'completed', label: 'Completed', icon: CheckCircle, count: orders.filter(o => (o.status || o.Order_Status || '').toLowerCase() === 'completed').length },
-    { key: 'hold', label: 'Hold', icon: AlertCircle, count: orders.filter(o => (o.status || o.Order_Status || '').toLowerCase() === 'hold').length },
-    { key: 'picked', label: 'Picked', icon: Package, count: orders.filter(o => (o.status || o.Order_Status || '').toLowerCase() === 'picked').length },
-    { key: 'dispatched', label: 'Dispatched', icon: Truck, count: orders.filter(o => (o.status || o.Order_Status || '').toLowerCase() === 'dispatched').length },
-    { key: 'cancelled', label: 'Cancelled', icon: AlertCircle, count: orders.filter(o => (o.status || o.Order_Status || '').toLowerCase() === 'cancelled').length },
+    { key: 'new', label: 'New', icon: Plus, count: orders.filter(o => (o.Order_Status || '').toLowerCase() === 'new').length },
+    { key: 'pending', label: 'Pending', icon: Clock, count: orders.filter(o => (o.Order_Status || '').toLowerCase() === 'pending').length },
+    { key: 'processing', label: 'Processing', icon: Package, count: orders.filter(o => (o.Order_Status || '').toLowerCase() === 'processing').length },
+    { key: 'completed', label: 'Completed', icon: CheckCircle, count: orders.filter(o => (o.Order_Status || '').toLowerCase() === 'completed').length },
+    { key: 'hold', label: 'Hold', icon: AlertCircle, count: orders.filter(o => (o.Order_Status || '').toLowerCase() === 'hold').length },
+    { key: 'picked', label: 'Picked', icon: Package, count: orders.filter(o => (o.Order_Status || '').toLowerCase() === 'picked').length },
+    { key: 'dispatched', label: 'Dispatched', icon: Truck, count: orders.filter(o => (o.Order_Status || '').toLowerCase() === 'dispatched').length },
+    { key: 'delivered', label: 'Delivered', icon: CheckCircle, count: orders.filter(o => (o.Order_Status || '').toLowerCase() === 'delivered').length },
+    { key: 'cancelled', label: 'Cancelled', icon: AlertCircle, count: orders.filter(o => (o.Order_Status || '').toLowerCase() === 'cancelled').length },
   ];
 
   const sortOptions = [
@@ -663,7 +682,7 @@ export default function OrdersScreen() {
       <FlatList
         data={filteredOrders}
         renderItem={renderOrderItem}
-        keyExtractor={(item, index) => (item.id || item.Order_Id || index).toString()}
+        keyExtractor={(item, index) => (item.Order_Id || index).toString()}
         contentContainerStyle={[
           styles.listContent, 
           isTabletDevice && styles.tabletListContent
@@ -727,7 +746,7 @@ export default function OrdersScreen() {
       <OrderStatusModal
         visible={showStatusModal}
         onClose={() => setShowStatusModal(false)}
-        currentStatus={selectedOrder?.status || selectedOrder?.Order_Status || ''}
+        currentStatus={selectedOrder?.Order_Status || ''}
         onUpdateStatus={handleUpdateStatus}
         isLoading={isUpdatingStatus}
       />
@@ -1028,6 +1047,19 @@ const styles = StyleSheet.create({
   tabletPoText: {
     fontSize: 13,
     marginLeft: 8,
+  },
+  placedByInfo: {
+    marginTop: 4,
+  },
+  placedByText: {
+    fontSize: 11,
+    color: '#667eea',
+    fontWeight: '500',
+    marginLeft: 20,
+  },
+  tabletPlacedByText: {
+    fontSize: 13,
+    marginLeft: 24,
   },
   orderAmount: {
     alignItems: 'flex-end',

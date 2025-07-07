@@ -22,11 +22,40 @@ export interface OrderItem {
   picked?: boolean;
   pickedQuantity?: number;
   rackLocation?: string;
+  basicDiscount?: number;
+  schemeDiscount?: number;
+  additionalDiscount?: number;
+  urgent?: boolean;
   part?: {
     name: string;
     category: string;
     image?: string;
   };
+  // API response fields for compatibility
+  Order_Item_Id?: number;
+  Order_Id?: number;
+  Order_Srl?: number;
+  Part_Admin?: string;
+  Part_Salesman?: string;
+  Order_Qty?: number;
+  Dispatch_Qty?: number;
+  Pick_Date?: number | null;
+  Pick_By?: string | null;
+  OrderItemStatus?: string;
+  PlaceDate?: number;
+  RetailerId?: number;
+  ItemAmount?: number;
+  SchemeDisc?: number;
+  AdditionalDisc?: number;
+  Discount?: number;
+  MRP?: number;
+  FirstOrderDate?: number;
+  Urgent_Status?: number;
+  Last_Sync?: number;
+  created_at?: string;
+  updated_at?: string;
+  Part_Name?: string;
+  Part_Image?: string | null;
 }
 
 interface OrderItemPickerProps {
@@ -54,7 +83,8 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
 
   const handleQuantityChange = (item: OrderItem, newQuantity: number) => {
     // Ensure quantity is not negative and doesn't exceed order quantity
-    const validQuantity = Math.max(0, Math.min(newQuantity, item.quantity));
+    const orderQuantity = item.quantity || item.Order_Qty || 0;
+    const validQuantity = Math.max(0, Math.min(newQuantity, orderQuantity));
     
     // If quantity is 0, uncheck the item
     if (validQuantity === 0) {
@@ -66,6 +96,8 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
 
   return (
     <View style={styles.container}>
+     
+      
       <View style={styles.header}>
         <Text style={[styles.title, isTabletDevice && styles.tabletTitle]}>
           Order Items
@@ -106,7 +138,7 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
                 disabled && styles.disabledCheckbox,
                 isTabletDevice && styles.tabletCheckboxContainer
               ]}
-              onPress={() => !disabled && onItemPick(item.id, !item.picked, item.picked ? 0 : item.quantity)}
+              onPress={() => !disabled && onItemPick(item.id, !item.picked, item.picked ? 0 : (item.quantity || item.Order_Qty || 0))}
               disabled={disabled}
             >
               {item.picked ? (
@@ -123,8 +155,8 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
             </TouchableOpacity>
             
             <View style={styles.itemImageContainer}>
-              {item.part?.image ? (
-                <Image source={{ uri: item.part.image }} style={styles.itemImage} />
+              {(item.part?.image || item.Part_Image) ? (
+                <Image source={{ uri: item.part?.image || item.Part_Image || '' }} style={styles.itemImage} />
               ) : (
                 <LinearGradient
                   colors={['#667eea', '#764ba2']}
@@ -133,14 +165,19 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
                   <Package size={isTabletDevice ? 24 : 20} color="#FFFFFF" />
                 </LinearGradient>
               )}
+              {(item.urgent || item.Urgent_Status === 1) && (
+                <View style={styles.itemUrgentBadge}>
+                  <AlertCircle size={10} color="#ef4444" />
+                </View>
+              )}
             </View>
             
             <View style={styles.itemInfo}>
               <Text style={[styles.itemName, isTabletDevice && styles.tabletItemName]} numberOfLines={2}>
-                {item.partName || item.part?.name || 'Unknown Part'}
+                {item.partName || item.part?.name || item.Part_Name || item.Part_Salesman || 'Unknown Part'}
               </Text>
               <Text style={[styles.itemNumber, isTabletDevice && styles.tabletItemNumber]}>
-                #{item.partNumber}
+                #{item.partNumber || item.Part_Admin}
               </Text>
               
               {item.rackLocation && (
@@ -154,7 +191,7 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
               
               <View style={styles.quantityContainer}>
                 <Text style={[styles.quantityLabel, isTabletDevice && styles.tabletQuantityLabel]}>
-                  Order Qty: {item.quantity}
+                  Order Qty: {item.quantity || item.Order_Qty || 0}
                 </Text>
                 
                 {item.picked && (
@@ -162,12 +199,12 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
                     <Text style={[
                       styles.pickedQuantityLabel, 
                       isTabletDevice && styles.tabletPickedQuantityLabel,
-                      (item.pickedQuantity || 0) < item.quantity && styles.partialQuantityLabel
+                      (item.pickedQuantity || 0) < (item.quantity || item.Order_Qty || 0) && styles.partialQuantityLabel
                     ]}>
-                      Picked: {item.pickedQuantity || 0}/{item.quantity}
+                      Picked: {item.pickedQuantity || 0}/{item.quantity || item.Order_Qty || 0}
                     </Text>
                     
-                    {(item.pickedQuantity || 0) < item.quantity && (
+                    {(item.pickedQuantity || 0) < (item.quantity || item.Order_Qty || 0) && (
                       <View style={styles.partialBadge}>
                         <Text style={styles.partialBadgeText}>Partial</Text>
                       </View>
@@ -179,7 +216,7 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
             
             <View style={styles.itemDetails}>
               <Text style={[styles.priceText, isTabletDevice && styles.tabletPriceText]}>
-                {formatCurrency(item.totalPrice)}
+                {formatCurrency(item.totalPrice || item.ItemAmount || 0)}
               </Text>
               
               {item.picked && (
@@ -206,9 +243,9 @@ export const OrderItemPicker: React.FC<OrderItemPickerProps> = ({
                   <TouchableOpacity
                     style={styles.quantityButton}
                     onPress={() => handleQuantityChange(item, (item.pickedQuantity || 0) + 1)}
-                    disabled={disabled || (item.pickedQuantity || 0) >= item.quantity}
+                    disabled={disabled || (item.pickedQuantity || 0) >= (item.quantity || item.Order_Qty || 0)}
                   >
-                    <Plus size={16} color={(item.pickedQuantity || 0) >= item.quantity ? "#cbd5e1" : "#64748b"} />
+                    <Plus size={16} color={(item.pickedQuantity || 0) >= (item.quantity || item.Order_Qty || 0) ? "#cbd5e1" : "#64748b"} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -331,6 +368,7 @@ const styles = StyleSheet.create({
   },
   itemImageContainer: {
     marginRight: 12,
+    position: 'relative',
   },
   itemImage: {
     width: 50,
@@ -343,6 +381,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  itemUrgentBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#fee2e2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   itemInfo: {
     flex: 1,
